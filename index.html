@@ -55,6 +55,7 @@
     max-width:1440px;
     margin:0 auto;
     display:flex;
+    flex-direction:column;
     background:var(--chrome);
     border-left:1px solid var(--line);
     border-right:1px solid var(--line);
@@ -420,12 +421,6 @@
       </nav>
       <div class="side-foot" id="sideFoot">
         <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
-        <div class="read-actions">
-          <button type="button" id="readExport">Экспорт</button>
-          <button type="button" id="readImport">Импорт</button>
-          <button type="button" id="readReset">Сброс</button>
-        </div>
-        <input type="file" id="readFile" accept="application/json,.json" hidden>
       </div>
     </aside>
 
@@ -762,7 +757,6 @@
   const READ_KEY = "books-read";
   const readCountEl = document.getElementById("readCount");
   const readTotalEl = document.getElementById("readTotal");
-  const readFileEl  = document.getElementById("readFile");
 
   function loadRead() {
     try { return JSON.parse(localStorage.getItem(READ_KEY)) || {}; } catch (e) { return {}; }
@@ -807,42 +801,6 @@
     } catch (e) {}
   }
   function broadcastRead() { frames.forEach(postRead); }
-
-  document.getElementById("readExport").addEventListener("click", function () {
-    const data = JSON.stringify(Object.keys(readMap), null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "books-read.json";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  });
-  document.getElementById("readImport").addEventListener("click", function () { readFileEl.click(); });
-  readFileEl.addEventListener("change", function () {
-    const file = this.files && this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function () {
-      try {
-        const parsed = JSON.parse(reader.result);
-        const arr = Array.isArray(parsed) ? parsed : Object.keys(parsed || {});
-        setReadList(arr);
-        broadcastRead();
-      } catch (e) {}
-    };
-    reader.readAsText(file);
-    this.value = "";
-  });
-  document.getElementById("readReset").addEventListener("click", function () {
-    if (window.confirm("Сбросить все отметки «прочитано»?")) {
-      readMap = {};
-      saveRead(readMap);
-      refreshRead();
-      broadcastRead();
-    }
-  });
 
   // ---- адаптивная раскладка: меню сверху (десктоп) или в панели (смартфон) ----
   const footEl = document.getElementById("sideFoot");
