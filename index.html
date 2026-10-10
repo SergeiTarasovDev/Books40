@@ -267,7 +267,7 @@
   /* ---------- верхнее меню (десктоп) ---------- */
   .topbar{display:none}
 
-  @media (min-width:721px){
+  @media (min-width:721px) and (hover:hover) and (pointer:fine){
     aside.sidebar{display:none}
 
     .topbar{
@@ -328,7 +328,7 @@
   }
 
   /* ---------- мобильная версия ---------- */
-  @media (max-width:720px){
+  @media (max-width:720px), (hover:none) and (pointer:coarse){
     .app{max-width:none;border:0;flex-direction:column}
 
     .mobile-bar{
@@ -813,10 +813,12 @@
   const sidebarEl = document.getElementById("sidebar");
   const menuSlot = document.getElementById("menuSlot");
   const sideSlot = document.getElementById("sideSlot");
-  const mqMobile = window.matchMedia("(max-width:720px)");
+  const mqSmall = window.matchMedia("(max-width:720px)");
+  const mqTouch = window.matchMedia("(hover:none) and (pointer:coarse)");
+  function isMobileLayout() { return mqSmall.matches || mqTouch.matches; }
 
   function applyLayout() {
-    const mobile = mqMobile.matches;
+    const mobile = isMobileLayout();
     if (mobile) {
       sidebarEl.appendChild(navEl);
       sidebarEl.appendChild(footEl);
@@ -829,7 +831,10 @@
       if (t) { t.textContent = mobile ? s.name : s.name.split(" ")[0]; }
     });
   }
-  (mqMobile.addEventListener ? mqMobile.addEventListener("change", applyLayout) : mqMobile.addListener(applyLayout));
+  [mqSmall, mqTouch].forEach(function (m) {
+    if (m.addEventListener) { m.addEventListener("change", applyLayout); }
+    else if (m.addListener) { m.addListener(applyLayout); }
+  });
   applyLayout();
 
   refreshRead();
