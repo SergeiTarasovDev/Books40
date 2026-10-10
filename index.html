@@ -268,7 +268,7 @@
     aside.sidebar{display:none}
 
     .topbar{
-      position:relative;z-index:50;
+      position:sticky;top:0;z-index:1000;
       display:flex;align-items:stretch;justify-content:space-between;gap:16px;
       flex:0 0 auto;padding:0 18px;
       background:var(--chrome);border-bottom:1px solid var(--line);
@@ -316,7 +316,7 @@
       display:none;min-width:290px;max-width:400px;max-height:70vh;overflow:auto;
       background:var(--paper);border:1px solid var(--line);
       border-radius:0 0 12px 12px;box-shadow:0 16px 34px rgba(0,0,0,.22);
-      padding:8px;z-index:80;
+      padding:8px;z-index:1200;
     }
     .topbar #nav .menu-group:hover .menu-panel,
     .topbar #nav .menu-group:focus-within .menu-panel,
