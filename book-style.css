@@ -221,13 +221,23 @@ blockquote.quote .src{
 }
 
 .insight{
-  margin-top:22px;background:var(--alt-bg);
-  border:1px dashed var(--alt-line);border-radius:10px;
-  padding:16px 20px;font-size:15.5px;color:var(--alt-ink);
+  margin-top:22px;
+  background:var(--alt-bg);
+  border-left:4px solid var(--alt);
+  border-radius:0 12px 12px 0;
+  padding:15px 20px;
+  font-size:15.5px;
+  color:var(--alt-ink);
 }
 .insight .tag{
-  font-family:"Segoe UI",Arial,sans-serif;font-size:12px;letter-spacing:.14em;
-  text-transform:uppercase;font-weight:700;color:var(--alt);display:block;margin-bottom:6px;
+  display:block;
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:12.5px;
+  font-weight:700;
+  letter-spacing:.01em;
+  text-transform:none;
+  color:var(--alt);
+  margin-bottom:6px;
 }
 
 .checklist{list-style:none;margin:0;padding:0}
@@ -390,30 +400,67 @@ article.card{position:relative}
 article.card.is-read{opacity:.6}
 article.card.is-read:hover{opacity:1}
 
-@media (max-width:620px){
-  .read-toggle .lbl{display:none}
-  .read-toggle{padding:8px 11px}
+@media (max-width:720px){
+  .page-tools .read-toggle{display:none}
+  .progress-chip{display:none}
+  .to-top{display:none}
+  .wrap{padding-bottom:104px}
+
+  .page-bar{
+    display:flex;
+    position:fixed;left:0;right:0;bottom:0;z-index:1200;
+    align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:var(--paper);border-top:1px solid var(--line);
+    box-shadow:0 -6px 20px rgba(0,0,0,.12);
+  }
+  .page-bar .bar-progress{
+    font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:700;
+    color:var(--accent);white-space:nowrap;
+  }
+  .page-bar .read-toggle{padding:8px 12px}
+  .page-bar .read-toggle .lbl{display:inline}
+  .page-bar .to-top-bar{
+    appearance:none;cursor:pointer;
+    font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:700;
+    color:var(--text);background:var(--accent-bg);
+    border:1px solid var(--line);border-radius:999px;padding:8px 14px;
+  }
 }
 
 /* ---------- прогресс чтения ---------- */
 .read-progress{
-  position:fixed;top:0;left:0;right:0;height:3px;z-index:1200;
+  position:fixed;top:0;left:0;right:0;height:4px;z-index:1200;
   background:transparent;pointer-events:none;
 }
 .read-progress-fill{
   height:100%;width:0;background:var(--accent);
   transition:width .1s linear;
 }
-.read-progress-chip{
-  position:fixed;right:16px;bottom:16px;z-index:1200;
-  font-family:"Segoe UI",Arial,sans-serif;font-size:12px;font-weight:600;
-  color:var(--paper);background:var(--ink);
-  padding:6px 12px;border-radius:999px;
-  opacity:0;transform:translateY(6px);
-  transition:opacity .2s ease,transform .2s ease;
-  pointer-events:none;
+/* плашка прогресса — в панели управления (десктоп), постоянная */
+.progress-chip{
+  display:inline-flex;align-items:center;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:13px;font-weight:700;
+  color:var(--accent);background:var(--paper);
+  border:1px solid var(--line);border-radius:999px;
+  padding:8px 15px;box-shadow:var(--shadow);
+  white-space:nowrap;
 }
-.read-progress-chip.show{opacity:.92;transform:translateY(0)}
+/* кнопка «Наверх» (десктоп) */
+.to-top{
+  position:fixed;right:16px;bottom:16px;z-index:1100;
+  appearance:none;cursor:pointer;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:13px;font-weight:700;
+  color:var(--text);background:var(--paper);
+  border:1px solid var(--line);border-radius:999px;
+  padding:10px 16px;box-shadow:var(--shadow);
+  opacity:0;visibility:hidden;transform:translateY(8px);
+  transition:opacity .2s ease,transform .2s ease,visibility .2s ease,color .15s ease,border-color .15s ease;
+}
+.to-top.show{opacity:1;visibility:visible;transform:translateY(0)}
+.to-top:hover{color:var(--accent);border-color:var(--accent)}
+/* нижняя панель на смартфоне (скрыта на десктопе) */
+.page-bar{display:none}
 
 /* ---------- блок «дочитали?» в конце книги ---------- */
 .finish{

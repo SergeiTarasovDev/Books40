@@ -1,7 +1,8 @@
 /* Общая логика страниц книг:
    1) тема (beige/dark) — синхронизируется с оболочкой через postMessage;
-   2) отметка «прочитано» — на странице книги (кнопка сверху и кнопка внизу);
-   3) индикатор прогресса чтения — полоса сверху + плашка «% · глава N/M».
+   2) отметка «прочитано» — кнопка сверху (десктоп) и в нижней панели (смартфон) + блок в конце;
+   3) прогресс чтения — полоса сверху + постоянная плашка «% · глава N/M»;
+   4) кнопка «Наверх».
    Внутри оболочки книга не рисует свой переключатель темы (он один, в меню). */
 (function () {
   var KEY_THEME = "book-theme";
@@ -22,11 +23,7 @@
 
   var theme = valid(fromUrl()) || storedTheme() || "beige";
   document.documentElement.setAttribute("data-theme", theme);
-  function applyTheme(t) {
-    t = valid(t) || "beige";
-    theme = t;
-    document.documentElement.setAttribute("data-theme", t);
-  }
+  function applyTheme(t) { t = valid(t) || "beige"; theme = t; document.documentElement.setAttribute("data-theme", t); }
 
   function readAll() {
     try { return JSON.parse(localStorage.getItem(KEY_READ)) || {}; } catch (e) { return {}; }
@@ -50,12 +47,20 @@
   }
 
   onReady(function () {
+    var readBtn = null, readBar = null, finishBtn = null;
+    var chip = null, barProgress = null;
+    var toTop = null, toTopBar = null;
+
+    // ---- панель инструментов (десктоп, верх-право) ----
     var tools = document.createElement("div");
     tools.className = "page-tools";
 
-    // кнопка «прочитано» сверху — только на страницах книг
-    var readBtn = null;
     if (isBookPage) {
+      chip = document.createElement("span");
+      chip.className = "progress-chip";
+      chip.textContent = "0%";
+      tools.appendChild(chip);
+
       readBtn = document.createElement("button");
       readBtn.type = "button";
       readBtn.className = "read-toggle";
@@ -64,7 +69,6 @@
       tools.appendChild(readBtn);
     }
 
-    // переключатель темы — только на отдельной странице
     var themeWrap = null;
     if (!embedded) {
       themeWrap = document.createElement("div");
@@ -85,37 +89,60 @@
 
     if (tools.children.length) document.body.appendChild(tools);
 
-    // ---- кнопка «отметить прочитанной» в конце страницы ----
-    var finishBtn = null;
+    // ---- нижняя панель (смартфон) ----
     if (isBookPage) {
+      var bar = document.createElement("div");
+      bar.className = "page-bar";
+
+      readBar = document.createElement("button");
+      readBar.type = "button";
+      readBar.className = "read-toggle";
+      readBar.innerHTML = '<span class="mark">✓</span><span class="lbl">Прочитано</span>';
+      readBar.addEventListener("click", function () { toggleRead(); });
+
+      barProgress = document.createElement("span");
+      barProgress.className = "bar-progress";
+      barProgress.textContent = "0%";
+
+      toTopBar = document.createElement("button");
+      toTopBar.type = "button";
+      toTopBar.className = "to-top-bar";
+      toTopBar.textContent = "Наверх";
+      toTopBar.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+
+      bar.appendChild(readBar);
+      bar.appendChild(barProgress);
+      bar.appendChild(toTopBar);
+      document.body.appendChild(bar);
+
+      // ---- кнопка «Наверх» (десктоп) ----
+      toTop = document.createElement("button");
+      toTop.type = "button";
+      toTop.className = "to-top";
+      toTop.textContent = "Наверх";
+      toTop.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+      document.body.appendChild(toTop);
+
+      // ---- блок «дочитали?» в конце книги ----
       var host = document.querySelector(".wrap") || document.body;
       var fin = document.createElement("section");
       fin.className = "finish";
-      fin.innerHTML =
-        '<p class="finish-q">Дочитали книгу?</p>' +
-        '<button class="finish-btn" type="button"></button>';
+      fin.innerHTML = '<p class="finish-q">Дочитали книгу?</p><button class="finish-btn" type="button"></button>';
       var footerEl = host.querySelector("footer");
       if (footerEl && footerEl.parentNode === host) { host.insertBefore(fin, footerEl); }
       else { host.appendChild(fin); }
       finishBtn = fin.querySelector(".finish-btn");
       finishBtn.addEventListener("click", function () { toggleRead(); });
-    }
 
-    // ---- прогресс чтения ----
-    if (isBookPage) {
-      var bar = document.createElement("div");
-      bar.className = "read-progress";
+      // ---- полоса и плашка прогресса ----
+      var barEl = document.createElement("div");
+      barEl.className = "read-progress";
       var fill = document.createElement("div");
       fill.className = "read-progress-fill";
-      bar.appendChild(fill);
-      document.body.appendChild(bar);
-
-      var chip = document.createElement("div");
-      chip.className = "read-progress-chip";
-      document.body.appendChild(chip);
+      barEl.appendChild(fill);
+      document.body.appendChild(barEl);
 
       var chapters = Array.prototype.slice.call(document.querySelectorAll("article.chapter"));
-      var hideTimer = null;
 
       function compute() {
         var doc = document.documentElement;
@@ -130,25 +157,19 @@
             if (chapters[i].getBoundingClientRect().top <= 140) { idx = i + 1; }
           }
         }
-        return { pct: pct, idx: idx, total: chapters.length };
-      }
-      function setFill() {
-        var r = compute();
-        fill.style.width = r.pct + "%";
+        return { pct: pct, idx: idx, total: chapters.length, top: doc.scrollTop };
       }
       function onScroll() {
         var r = compute();
         fill.style.width = r.pct + "%";
-        chip.textContent = chapters.length
-          ? (r.pct + "% · глава " + r.idx + "/" + r.total)
-          : (r.pct + "%");
-        chip.classList.add("show");
-        if (hideTimer) clearTimeout(hideTimer);
-        hideTimer = setTimeout(function () { chip.classList.remove("show"); }, 1200);
+        var label = chapters.length ? (r.pct + "% · глава " + r.idx + "/" + r.total) : (r.pct + "%");
+        chip.textContent = label;
+        barProgress.textContent = label;
+        toTop.classList.toggle("show", r.top > 300);
       }
       window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", setFill);
-      setFill();
+      window.addEventListener("resize", onScroll);
+      onScroll();
     }
 
     // ---- состояние «прочитано» ----
@@ -162,10 +183,11 @@
     }
     function refreshRead() {
       var on = !!readAll()[FILE];
-      if (readBtn) {
-        readBtn.classList.toggle("read", on);
-        readBtn.title = on ? "Снять отметку «прочитано»" : "Отметить прочитанной";
-      }
+      [readBtn, readBar].forEach(function (b) {
+        if (!b) return;
+        b.classList.toggle("read", on);
+        b.title = on ? "Снять отметку «прочитано»" : "Отметить прочитанной";
+      });
       if (finishBtn) {
         finishBtn.classList.toggle("read", on);
         finishBtn.textContent = on ? "Прочитано ✓" : "Отметить прочитанной";
@@ -187,7 +209,6 @@
       }
     }
 
-    // синхронизация с оболочкой
     if (embedded) {
       window.addEventListener("message", function (e) {
         var d = e.data;

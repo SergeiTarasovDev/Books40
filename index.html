@@ -25,6 +25,7 @@
     --gold:#9c7614;
     --frame:#fffdf9;
     --scroll:#cfc4ab;
+    --accent-line:#e7d6ac;
     --outside:#e7dfcd;
   }
   html[data-theme="dark"]{
@@ -36,6 +37,7 @@
     --gold:#d4a24e;
     --frame:#12161c;
     --scroll:#333d49;
+    --accent-line:#4a3d24;
     --outside:#0b0e13;
   }
   *{box-sizing:border-box}
@@ -124,10 +126,17 @@
     padding:6px 12px 18px;
     scrollbar-width:thin;
   }
-  .side-nav::-webkit-scrollbar{width:10px}
+  .side-nav{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
+  .side-nav::-webkit-scrollbar{width:11px}
+  .side-nav::-webkit-scrollbar-track{background:transparent}
   .side-nav::-webkit-scrollbar-thumb{
-    background:var(--scroll);
+    background:var(--line);
     border-radius:999px;
+    border:3px solid var(--chrome);
+    background-clip:padding-box;
+  }
+  .side-nav::-webkit-scrollbar-thumb:hover{
+    background:var(--accent-line);
     border:3px solid var(--chrome);
     background-clip:padding-box;
   }
@@ -170,18 +179,19 @@
   }
   .read-actions button:hover{border-color:var(--gold);color:var(--gold)}
 
-  .nav-cat{
-    font-size:10.5px;
-    font-weight:700;
-    letter-spacing:.15em;
-    text-transform:uppercase;
-    color:var(--muted);
-    opacity:.7;
-    padding:16px 12px 6px;
-    margin-top:6px;
-    border-top:1px solid var(--line);
+  button.nav-cat{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    width:100%;appearance:none;cursor:pointer;
+    background:transparent;border:0;border-top:1px solid var(--line);
+    font-family:"Segoe UI",Arial,sans-serif;font-size:10.5px;font-weight:700;
+    letter-spacing:.15em;text-transform:uppercase;color:var(--muted);
+    padding:14px 12px 8px;margin-top:6px;
   }
-  .nav-cat:first-child{border-top:0;margin-top:0;padding-top:8px}
+  button.nav-cat:hover{color:var(--text)}
+  .nav-caret{font-size:10px;opacity:.75;transition:transform .18s ease}
+  button.nav-cat.open .nav-caret{transform:rotate(180deg)}
+  .nav-group{display:none}
+  .nav-group.open{display:block}
 
   button.nav-item{
     width:100%;
@@ -486,11 +496,28 @@
 
   // ---- меню по категориям + фреймы ----
   let idx = 0;
+  const openCats = loadOpenCats();
   catalog.forEach(function (cat) {
-    const label = document.createElement("div");
-    label.className = "nav-cat";
-    label.textContent = cat.name;
-    navEl.appendChild(label);
+    const isCatalogCat = (cat.name === "Каталог");
+    let group = null;
+    if (!isCatalogCat) {
+      const head = document.createElement("button");
+      head.type = "button";
+      head.className = "nav-cat" + (openCats[cat.name] ? " open" : "");
+      head.innerHTML = '<span class="nav-cat-txt"></span><span class="nav-caret">▾</span>';
+      head.querySelector(".nav-cat-txt").textContent = cat.name;
+      head.addEventListener("click", function () {
+        const open = group.classList.toggle("open");
+        head.classList.toggle("open", open);
+        openCats[cat.name] = open;
+        saveOpenCats(openCats);
+      });
+      navEl.appendChild(head);
+
+      group = document.createElement("div");
+      group.className = "nav-group" + (openCats[cat.name] ? " open" : "");
+      navEl.appendChild(group);
+    }
 
     cat.items.forEach(function (book) {
       const i = idx++;
@@ -521,7 +548,7 @@
         row.appendChild(chk);
       }
 
-      navEl.appendChild(row);
+      (group || navEl).appendChild(row);
 
       const frame = document.createElement("iframe");
       frame.className = "frame" + (i === 0 ? " active" : "");
@@ -608,6 +635,14 @@
       broadcastRead();
     }
   });
+
+  // ---- состояние раскрытых категорий меню ----
+  function loadOpenCats() {
+    try { return JSON.parse(localStorage.getItem("menu-open")) || {}; } catch (e) { return {}; }
+  }
+  function saveOpenCats(o) {
+    try { localStorage.setItem("menu-open", JSON.stringify(o)); } catch (e) {}
+  }
 
   // ---- отметки «прочитано» ----
   const READ_KEY = "books-read";
