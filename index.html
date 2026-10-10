@@ -147,7 +147,7 @@
   button.nav-check{
     flex:0 0 auto;
     appearance:none;border:0;background:transparent;cursor:pointer;
-    width:34px;height:34px;border-radius:8px;
+    width:30px;height:30px;border-radius:8px;
     display:inline-flex;align-items:center;justify-content:center;
     color:var(--muted);
   }
@@ -179,18 +179,27 @@
   }
   .read-actions button:hover{border-color:var(--gold);color:var(--gold)}
 
+  .nav-tools{display:flex;gap:6px;padding:6px 0 8px}
+  .nav-tools button{
+    flex:1 1 0;appearance:none;font-family:inherit;font-size:11.5px;font-weight:600;
+    color:var(--muted);background:var(--chrome-2);border:1px solid var(--line);
+    border-radius:8px;padding:6px 8px;cursor:pointer;
+  }
+  .nav-tools button:hover{color:var(--gold);border-color:var(--gold)}
+
   button.nav-cat{
+    position:sticky;top:0;z-index:2;
     display:flex;align-items:center;justify-content:space-between;gap:8px;
     width:100%;appearance:none;cursor:pointer;
-    background:transparent;border:0;border-top:1px solid var(--line);
+    background:var(--chrome);border:0;border-top:1px solid var(--line);
     font-family:"Segoe UI",Arial,sans-serif;font-size:10.5px;font-weight:700;
     letter-spacing:.15em;text-transform:uppercase;color:var(--muted);
-    padding:14px 12px 8px;margin-top:6px;
+    padding:11px 12px 9px;margin-top:6px;
   }
   button.nav-cat:hover{color:var(--text)}
   .nav-caret{font-size:10px;opacity:.75;transition:transform .18s ease}
   button.nav-cat.open .nav-caret{transform:rotate(180deg)}
-  .nav-group{display:none}
+  .nav-group{display:none;padding-bottom:4px}
   .nav-group.open{display:block}
 
   button.nav-item{
@@ -200,11 +209,11 @@
     background:transparent;
     color:var(--text);
     font-family:inherit;
-    font-size:14px;
+    font-size:13.5px;
     font-weight:600;
     line-height:1.4;
     text-align:left;
-    padding:10px 12px;
+    padding:8px 12px;
     border-radius:10px;
     cursor:pointer;
     display:flex;
@@ -327,7 +336,12 @@
           </button>
         </div>
       </div>
-      <nav class="side-nav" id="nav"></nav>
+      <nav class="side-nav" id="nav">
+        <div class="nav-tools">
+          <button type="button" id="expandAll">Развернуть всё</button>
+          <button type="button" id="collapseAll">Свернуть всё</button>
+        </div>
+      </nav>
       <div class="side-foot">
         <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
         <div class="read-actions">
@@ -497,6 +511,7 @@
   // ---- меню по категориям + фреймы ----
   let idx = 0;
   const openCats = loadOpenCats();
+  const catSections = [];
   catalog.forEach(function (cat) {
     const isCatalogCat = (cat.name === "Каталог");
     let group = null;
@@ -517,6 +532,8 @@
       group = document.createElement("div");
       group.className = "nav-group" + (openCats[cat.name] ? " open" : "");
       navEl.appendChild(group);
+
+      catSections.push({ name: cat.name, head: head, group: group });
     }
 
     cat.items.forEach(function (book) {
@@ -558,6 +575,17 @@
       frames.push(frame);
     });
   });
+
+  function setAllCats(open) {
+    catSections.forEach(function (s) {
+      s.group.classList.toggle("open", open);
+      s.head.classList.toggle("open", open);
+      openCats[s.name] = open;
+    });
+    saveOpenCats(openCats);
+  }
+  document.getElementById("expandAll").addEventListener("click", function () { setAllCats(true); });
+  document.getElementById("collapseAll").addEventListener("click", function () { setAllCats(false); });
 
   function fileUrl(file) {
     return encodeURI(file) + "?theme=" + currentTheme;
@@ -638,7 +666,15 @@
 
   // ---- состояние раскрытых категорий меню ----
   function loadOpenCats() {
-    try { return JSON.parse(localStorage.getItem("menu-open")) || {}; } catch (e) { return {}; }
+    try {
+      var raw = localStorage.getItem("menu-open");
+      if (raw === null) {
+        var def = {};
+        catalog.forEach(function (c) { if (c.name !== "Каталог") { def[c.name] = true; } });
+        return def;
+      }
+      return JSON.parse(raw) || {};
+    } catch (e) { return {}; }
   }
   function saveOpenCats(o) {
     try { localStorage.setItem("menu-open", JSON.stringify(o)); } catch (e) {}
