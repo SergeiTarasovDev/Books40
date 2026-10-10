@@ -187,7 +187,8 @@
   }
   .nav-tools button:hover{color:var(--gold);border-color:var(--gold)}
 
-  button.nav-cat{
+  .menu-group{position:relative}
+  button.menu-head{
     position:sticky;top:0;z-index:2;
     display:flex;align-items:center;justify-content:space-between;gap:8px;
     width:100%;appearance:none;cursor:pointer;
@@ -196,11 +197,11 @@
     letter-spacing:.15em;text-transform:uppercase;color:var(--muted);
     padding:11px 12px 9px;margin-top:6px;
   }
-  button.nav-cat:hover{color:var(--text)}
-  .nav-caret{font-size:10px;opacity:.75;transition:transform .18s ease}
-  button.nav-cat.open .nav-caret{transform:rotate(180deg)}
-  .nav-group{display:none;padding-bottom:4px}
-  .nav-group.open{display:block}
+  button.menu-head:hover{color:var(--text)}
+  .menu-caret{font-size:10px;opacity:.75;transition:transform .18s ease}
+  .menu-group.open .menu-caret{transform:rotate(180deg)}
+  .menu-panel{display:none;padding-bottom:4px}
+  .menu-group.open .menu-panel{display:block}
 
   button.nav-item{
     width:100%;
@@ -258,6 +259,67 @@
     background:var(--frame);
   }
   iframe.frame.active{display:block}
+
+  /* ---------- верхнее меню (десктоп) ---------- */
+  .topbar{display:none}
+
+  @media (min-width:721px){
+    aside.sidebar{display:none}
+
+    .topbar{
+      display:flex;align-items:stretch;justify-content:space-between;gap:16px;
+      flex:0 0 auto;padding:0 18px;
+      background:var(--chrome);border-bottom:1px solid var(--line);
+    }
+    .topbar-menu{display:flex;align-items:stretch;min-width:0}
+    .topbar-side{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+    .topbar-side .theme-switch{width:auto}
+    .topbar-side .side-foot{
+      flex-direction:row;align-items:center;gap:12px;
+      border-top:0;padding:0;margin:0;
+    }
+    .topbar-side .read-stat{white-space:nowrap}
+    .topbar-side .read-actions{gap:6px}
+    .topbar-side .read-actions button{padding:6px 10px}
+
+    .topbar #nav{
+      display:flex;flex-direction:row;align-items:stretch;gap:2px;
+      padding:0;overflow:visible;
+    }
+    .topbar #nav .nav-tools{display:none}
+    .topbar #nav .nav-row{display:flex}
+
+    .topbar #nav .menu-group{position:relative;display:flex;align-items:stretch}
+    .topbar #nav > .nav-row > .nav-item,
+    .topbar #nav > .menu-group > .menu-head{
+      position:static;width:auto;margin:0;
+      display:inline-flex;align-items:center;gap:6px;
+      padding:14px 12px;border:0;border-bottom:2px solid transparent;
+      background:transparent;border-radius:0;
+      font-family:inherit;font-size:13px;font-weight:600;
+      letter-spacing:0;text-transform:none;color:var(--muted);
+    }
+    .topbar #nav > .nav-row > .nav-item:hover,
+    .topbar #nav > .menu-group > .menu-head:hover,
+    .topbar #nav > .menu-group.open > .menu-head{
+      color:var(--text);border-bottom-color:var(--gold);
+    }
+    .topbar #nav > .nav-row > .nav-item.active{
+      color:var(--gold);background:transparent;border-bottom-color:var(--gold);
+    }
+    .topbar #nav > .nav-row > .nav-item.active::before{display:none}
+
+    .topbar #nav .menu-panel{
+      position:absolute;top:100%;left:0;
+      display:none;min-width:290px;max-width:400px;max-height:70vh;overflow:auto;
+      background:var(--paper);border:1px solid var(--line);
+      border-radius:0 0 12px 12px;box-shadow:0 16px 34px rgba(0,0,0,.22);
+      padding:8px;z-index:80;
+    }
+    .topbar #nav .menu-group:hover .menu-panel,
+    .topbar #nav .menu-group:focus-within .menu-panel,
+    .topbar #nav .menu-group.open .menu-panel{display:block}
+  }
 
   /* ---------- мобильная версия ---------- */
   @media (max-width:720px){
@@ -325,6 +387,20 @@
       </div>
     </div>
 
+    <header class="topbar" id="topbar">
+      <div class="topbar-menu" id="menuSlot"></div>
+      <div class="topbar-side" id="sideSlot">
+        <div class="theme-switch" role="group" aria-label="Тема оформления">
+          <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+          </button>
+          <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
     <aside class="sidebar" id="sidebar">
       <div class="side-top">
         <div class="theme-switch" role="group" aria-label="Тема оформления">
@@ -342,7 +418,7 @@
           <button type="button" id="collapseAll">Свернуть всё</button>
         </div>
       </nav>
-      <div class="side-foot">
+      <div class="side-foot" id="sideFoot">
         <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
         <div class="read-actions">
           <button type="button" id="readExport">Экспорт</button>
@@ -514,26 +590,29 @@
   const catSections = [];
   catalog.forEach(function (cat) {
     const isCatalogCat = (cat.name === "Каталог");
-    let group = null;
+    let panel = null;
     if (!isCatalogCat) {
+      const wrap = document.createElement("div");
+      wrap.className = "menu-group" + (openCats[cat.name] ? " open" : "");
+
       const head = document.createElement("button");
       head.type = "button";
-      head.className = "nav-cat" + (openCats[cat.name] ? " open" : "");
-      head.innerHTML = '<span class="nav-cat-txt"></span><span class="nav-caret">▾</span>';
-      head.querySelector(".nav-cat-txt").textContent = cat.name;
+      head.className = "menu-head";
+      head.innerHTML = '<span class="menu-head-txt"></span><span class="menu-caret">▾</span>';
+      head.querySelector(".menu-head-txt").textContent = cat.name;
       head.addEventListener("click", function () {
-        const open = group.classList.toggle("open");
-        head.classList.toggle("open", open);
+        const open = wrap.classList.toggle("open");
         openCats[cat.name] = open;
         saveOpenCats(openCats);
       });
-      navEl.appendChild(head);
+      wrap.appendChild(head);
 
-      group = document.createElement("div");
-      group.className = "nav-group" + (openCats[cat.name] ? " open" : "");
-      navEl.appendChild(group);
+      panel = document.createElement("div");
+      panel.className = "menu-panel";
+      wrap.appendChild(panel);
+      navEl.appendChild(wrap);
 
-      catSections.push({ name: cat.name, head: head, group: group });
+      catSections.push({ name: cat.name, wrap: wrap, head: head });
     }
 
     cat.items.forEach(function (book) {
@@ -565,7 +644,7 @@
         row.appendChild(chk);
       }
 
-      (group || navEl).appendChild(row);
+      (panel || navEl).appendChild(row);
 
       const frame = document.createElement("iframe");
       frame.className = "frame" + (i === 0 ? " active" : "");
@@ -578,8 +657,7 @@
 
   function setAllCats(open) {
     catSections.forEach(function (s) {
-      s.group.classList.toggle("open", open);
-      s.head.classList.toggle("open", open);
+      s.wrap.classList.toggle("open", open);
       openCats[s.name] = open;
     });
     saveOpenCats(openCats);
@@ -765,6 +843,30 @@
       broadcastRead();
     }
   });
+
+  // ---- адаптивная раскладка: меню сверху (десктоп) или в панели (смартфон) ----
+  const footEl = document.getElementById("sideFoot");
+  const sidebarEl = document.getElementById("sidebar");
+  const menuSlot = document.getElementById("menuSlot");
+  const sideSlot = document.getElementById("sideSlot");
+  const mqMobile = window.matchMedia("(max-width:720px)");
+
+  function applyLayout() {
+    const mobile = mqMobile.matches;
+    if (mobile) {
+      sidebarEl.appendChild(navEl);
+      sidebarEl.appendChild(footEl);
+    } else {
+      menuSlot.appendChild(navEl);
+      sideSlot.insertBefore(footEl, sideSlot.firstChild);
+    }
+    catSections.forEach(function (s) {
+      var t = s.head.querySelector(".menu-head-txt");
+      if (t) { t.textContent = mobile ? s.name : s.name.split(" ")[0]; }
+    });
+  }
+  (mqMobile.addEventListener ? mqMobile.addEventListener("change", applyLayout) : mqMobile.addListener(applyLayout));
+  applyLayout();
 
   refreshRead();
   refreshSwitch();
