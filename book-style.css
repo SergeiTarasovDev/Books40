@@ -255,6 +255,66 @@ footer a{color:var(--accent)}
   padding:3px 9px;
 }
 
+/* ---------- главная мысль, приоритет, ссылка ---------- */
+.idea{
+  margin:0 0 12px;
+  padding:10px 14px;
+  background:var(--accent-bg);
+  border-left:3px solid var(--accent);
+  border-radius:0 8px 8px 0;
+  font-style:italic;
+  font-size:14.5px;
+  color:var(--accent-ink);
+}
+.stars{
+  flex:0 0 auto;
+  color:var(--accent);
+  font-size:14px;
+  letter-spacing:1px;
+  white-space:nowrap;
+}
+.more{
+  display:inline-block;
+  margin-top:12px;
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:13px;
+  font-weight:600;
+  color:var(--accent);
+  text-decoration:none;
+}
+.more:hover{text-decoration:underline}
+
+/* ---------- блок «с чего начать» ---------- */
+.start{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 24px;
+  margin-bottom:44px;
+}
+.start-kicker{
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+}
+.start h2{margin:4px 0 6px;font-size:24px;font-weight:700}
+.start > p{margin:0 0 16px;color:var(--muted);font-size:14.5px}
+.start-list{list-style:none;margin:0;padding:0;columns:2;column-gap:34px}
+.start-list li{
+  break-inside:avoid;
+  margin:0 0 9px;
+  padding-left:22px;
+  position:relative;
+  font-size:14.5px;
+}
+.start-list li::before{content:"★";position:absolute;left:0;top:0;color:var(--accent);font-size:12px}
+.start-list b{color:var(--text)}
+.start-list span{color:var(--muted)}
+
 /* ---------- полосы прокрутки ---------- */
 html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
 *::-webkit-scrollbar{width:11px;height:11px}
@@ -291,6 +351,9 @@ html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
 @media (max-width:620px){
   body{font-size:15px}
   .wrap{padding:0 16px 64px}
+  .start{padding:18px 16px;margin-bottom:32px}
+  .start h2{font-size:21px}
+  .start-list{columns:1}
 
   header.hero{padding:40px 0 22px;margin-bottom:20px}
   h1{font-size:clamp(24px,7vw,32px)}
