@@ -395,6 +395,47 @@ article.card.is-read:hover{opacity:1}
   .read-toggle{padding:8px 11px}
 }
 
+/* ---------- прогресс чтения ---------- */
+.read-progress{
+  position:fixed;top:0;left:0;right:0;height:3px;z-index:1200;
+  background:transparent;pointer-events:none;
+}
+.read-progress-fill{
+  height:100%;width:0;background:var(--accent);
+  transition:width .1s linear;
+}
+.read-progress-chip{
+  position:fixed;right:16px;bottom:16px;z-index:1200;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:12px;font-weight:600;
+  color:var(--paper);background:var(--ink);
+  padding:6px 12px;border-radius:999px;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .2s ease,transform .2s ease;
+  pointer-events:none;
+}
+.read-progress-chip.show{opacity:.92;transform:translateY(0)}
+
+/* ---------- блок «дочитали?» в конце книги ---------- */
+.finish{
+  margin:32px 0 0;
+  padding:28px 24px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  text-align:center;
+}
+.finish-q{margin:0 0 14px;font-size:18px;font-weight:700;color:var(--text)}
+.finish-btn{
+  appearance:none;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:14px;font-weight:700;
+  color:var(--paper);background:var(--accent);border:1px solid var(--accent);
+  border-radius:999px;padding:12px 26px;cursor:pointer;
+  transition:opacity .15s ease,background .15s ease,color .15s ease;
+}
+.finish-btn:hover{opacity:.9}
+.finish-btn.read{color:var(--accent);background:var(--accent-bg)}
+
 @media (max-width:620px){
   body{font-size:15px}
   .wrap{padding:0 16px 64px}

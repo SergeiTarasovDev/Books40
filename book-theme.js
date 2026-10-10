@@ -1,7 +1,8 @@
 /* Общая логика страниц книг:
    1) тема (beige/dark) — синхронизируется с оболочкой через postMessage;
-   2) отметка «прочитано» — только на страницах книг (не в каталоге и не в оболочке).
-   Внутри оболочки книга не рисует свой переключатель темы (он один, в меню), но показывает отметку. */
+   2) отметка «прочитано» — на странице книги (кнопка сверху и кнопка внизу);
+   3) индикатор прогресса чтения — полоса сверху + плашка «% · глава N/M».
+   Внутри оболочки книга не рисует свой переключатель темы (он один, в меню). */
 (function () {
   var KEY_THEME = "book-theme";
   var KEY_READ  = "books-read";
@@ -13,14 +14,10 @@
   function storedTheme() {
     try { return valid(localStorage.getItem(KEY_THEME)); } catch (e) { return null; }
   }
-  function saveTheme(t) {
-    try { localStorage.setItem(KEY_THEME, t); } catch (e) {}
-  }
+  function saveTheme(t) { try { localStorage.setItem(KEY_THEME, t); } catch (e) {} }
   function fromUrl() {
-    try {
-      var m = /[?&]theme=(beige|dark)/.exec(location.search);
-      return m ? m[1] : null;
-    } catch (e) { return null; }
+    try { var m = /[?&]theme=(beige|dark)/.exec(location.search); return m ? m[1] : null; }
+    catch (e) { return null; }
   }
 
   var theme = valid(fromUrl()) || storedTheme() || "beige";
@@ -34,9 +31,7 @@
   function readAll() {
     try { return JSON.parse(localStorage.getItem(KEY_READ)) || {}; } catch (e) { return {}; }
   }
-  function writeAll(o) {
-    try { localStorage.setItem(KEY_READ, JSON.stringify(o)); } catch (e) {}
-  }
+  function writeAll(o) { try { localStorage.setItem(KEY_READ, JSON.stringify(o)); } catch (e) {} }
 
   function fileName() {
     try {
@@ -58,22 +53,14 @@
     var tools = document.createElement("div");
     tools.className = "page-tools";
 
-    // отметка «прочитано» — только на страницах книг
+    // кнопка «прочитано» сверху — только на страницах книг
     var readBtn = null;
     if (isBookPage) {
       readBtn = document.createElement("button");
       readBtn.type = "button";
       readBtn.className = "read-toggle";
       readBtn.innerHTML = '<span class="mark">✓</span><span class="lbl">Прочитано</span>';
-      readBtn.addEventListener("click", function () {
-        var all = readAll();
-        if (all[FILE]) { delete all[FILE]; } else { all[FILE] = 1; }
-        writeAll(all);
-        refreshRead();
-        if (embedded) {
-          try { window.parent.postMessage({ type: "books-read", list: Object.keys(all) }, "*"); } catch (e) {}
-        }
-      });
+      readBtn.addEventListener("click", function () { toggleRead(); });
       tools.appendChild(readBtn);
     }
 
@@ -98,6 +85,73 @@
 
     if (tools.children.length) document.body.appendChild(tools);
 
+    // ---- кнопка «отметить прочитанной» в конце страницы ----
+    var finishBtn = null;
+    if (isBookPage) {
+      var host = document.querySelector(".wrap") || document.body;
+      var fin = document.createElement("section");
+      fin.className = "finish";
+      fin.innerHTML =
+        '<p class="finish-q">Дочитали книгу?</p>' +
+        '<button class="finish-btn" type="button"></button>';
+      var footerEl = host.querySelector("footer");
+      if (footerEl && footerEl.parentNode === host) { host.insertBefore(fin, footerEl); }
+      else { host.appendChild(fin); }
+      finishBtn = fin.querySelector(".finish-btn");
+      finishBtn.addEventListener("click", function () { toggleRead(); });
+    }
+
+    // ---- прогресс чтения ----
+    if (isBookPage) {
+      var bar = document.createElement("div");
+      bar.className = "read-progress";
+      var fill = document.createElement("div");
+      fill.className = "read-progress-fill";
+      bar.appendChild(fill);
+      document.body.appendChild(bar);
+
+      var chip = document.createElement("div");
+      chip.className = "read-progress-chip";
+      document.body.appendChild(chip);
+
+      var chapters = Array.prototype.slice.call(document.querySelectorAll("article.chapter"));
+      var hideTimer = null;
+
+      function compute() {
+        var doc = document.documentElement;
+        var max = doc.scrollHeight - doc.clientHeight;
+        var pct = max > 0 ? Math.round((doc.scrollTop / max) * 100) : 100;
+        if (pct < 0) pct = 0;
+        if (pct > 100) pct = 100;
+        var idx = 0;
+        if (chapters.length) {
+          idx = 1;
+          for (var i = 0; i < chapters.length; i++) {
+            if (chapters[i].getBoundingClientRect().top <= 140) { idx = i + 1; }
+          }
+        }
+        return { pct: pct, idx: idx, total: chapters.length };
+      }
+      function setFill() {
+        var r = compute();
+        fill.style.width = r.pct + "%";
+      }
+      function onScroll() {
+        var r = compute();
+        fill.style.width = r.pct + "%";
+        chip.textContent = chapters.length
+          ? (r.pct + "% · глава " + r.idx + "/" + r.total)
+          : (r.pct + "%");
+        chip.classList.add("show");
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(function () { chip.classList.remove("show"); }, 1200);
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", setFill);
+      setFill();
+    }
+
+    // ---- состояние «прочитано» ----
     function refreshTheme() {
       if (!themeWrap) return;
       var t = document.documentElement.getAttribute("data-theme");
@@ -107,16 +161,30 @@
       }
     }
     function refreshRead() {
-      if (!readBtn) return;
       var on = !!readAll()[FILE];
-      readBtn.classList.toggle("read", on);
-      readBtn.title = on ? "Снять отметку «прочитано»" : "Отметить прочитанной";
+      if (readBtn) {
+        readBtn.classList.toggle("read", on);
+        readBtn.title = on ? "Снять отметку «прочитано»" : "Отметить прочитанной";
+      }
+      if (finishBtn) {
+        finishBtn.classList.toggle("read", on);
+        finishBtn.textContent = on ? "Прочитано ✓" : "Отметить прочитанной";
+      }
     }
     function setReadList(list) {
       var o = {};
       (list || []).forEach(function (f) { o[f] = 1; });
       writeAll(o);
       refreshRead();
+    }
+    function toggleRead() {
+      var all = readAll();
+      if (all[FILE]) { delete all[FILE]; } else { all[FILE] = 1; }
+      writeAll(all);
+      refreshRead();
+      if (embedded) {
+        try { window.parent.postMessage({ type: "books-read", list: Object.keys(all) }, "*"); } catch (e) {}
+      }
     }
 
     // синхронизация с оболочкой
