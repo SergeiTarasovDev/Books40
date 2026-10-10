@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конспекты книг</title>
+<script>
+  /* Тема применяется до отрисовки, чтобы не было мигания. */
+  (function () {
+    var t = "beige";
+    try {
+      var s = localStorage.getItem("book-theme");
+      if (s === "dark" || s === "beige") { t = s; }
+    } catch (e) {}
+    document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<style>
+  :root, html[data-theme="beige"]{
+    --chrome:#f4efe4;
+    --chrome-2:#efe7d7;
+    --line:#e2d9c6;
+    --text:#26221a;
+    --muted:#6c6456;
+    --gold:#9c7614;
+    --frame:#fffdf9;
+    --scroll:#cfc4ab;
+    --outside:#e7dfcd;
+  }
+  html[data-theme="dark"]{
+    --chrome:#12161c;
+    --chrome-2:#1b212a;
+    --line:#2a323d;
+    --text:#e9eef3;
+    --muted:#93a0ad;
+    --gold:#d4a24e;
+    --frame:#12161c;
+    --scroll:#333d49;
+    --outside:#0b0e13;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--outside);
+    color:var(--text);
+    font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    overflow:hidden;
+    transition:background .2s ease,color .2s ease;
+  }
+
+  /* Центрируем всё приложение и ограничиваем ширину,
+     чтобы меню не «убегало» далеко от содержимого на широких экранах. */
+  .app{
+    height:100%;
+    max-width:1440px;
+    margin:0 auto;
+    display:flex;
+    background:var(--chrome);
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+  }
+
+  /* ---------- меню слева ---------- */
+  aside.sidebar{
+    flex:0 0 272px;
+    width:272px;
+    display:flex;
+    flex-direction:column;
+    background:var(--chrome);
+    border-right:1px solid var(--line);
+    overflow:hidden;
+  }
+
+  .side-top{
+    flex:0 0 auto;
+    padding:14px 14px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  .theme-switch{
+    display:flex;
+    width:100%;
+    gap:2px;
+    padding:3px;
+    background:var(--chrome-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+  }
+  .theme-switch button{
+    flex:1 1 0;
+    appearance:none;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    height:30px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    transition:background .15s ease,color .15s ease;
+  }
+  .theme-switch button:hover{color:var(--text)}
+  .theme-switch button.active{background:var(--chrome);color:var(--gold)}
+  .theme-switch svg{width:16px;height:16px}
+
+  .side-nav{
+    flex:1 1 auto;
+    overflow-y:auto;
+    padding:6px 12px 18px;
+    scrollbar-width:thin;
+  }
+  .side-nav::-webkit-scrollbar{width:10px}
+  .side-nav::-webkit-scrollbar-thumb{
+    background:var(--scroll);
+    border-radius:999px;
+    border:3px solid var(--chrome);
+    background-clip:padding-box;
+  }
+
+  /* заголовки разделов — приглушённые, с разделителем */
+  .nav-cat{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+    color:var(--muted);
+    opacity:.7;
+    padding:16px 12px 6px;
+    margin-top:6px;
+    border-top:1px solid var(--line);
+  }
+  .nav-cat:first-child{border-top:0;margin-top:0;padding-top:8px}
+
+  /* пункты — заметно ярче заголовков */
+  button.nav-item{
+    width:100%;
+    appearance:none;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--text);
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.4;
+    text-align:left;
+    padding:10px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    position:relative;
+    transition:background .12s ease,color .12s ease;
+  }
+  button.nav-item .dot{
+    flex:0 0 auto;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--cat,var(--muted));
+    opacity:.95;
+  }
+  button.nav-item:hover{background:var(--chrome-2)}
+  button.nav-item.active{background:var(--chrome-2);color:var(--gold)}
+  button.nav-item.active .dot{opacity:1}
+  button.nav-item.active::before{
+    content:"";
+    position:absolute;left:0;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:var(--gold);
+  }
+
+  /* ---------- контент ---------- */
+  main#stage{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
+    background:var(--frame);
+  }
+  iframe.frame{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:0;
+    display:none;
+    background:var(--frame);
+  }
+  iframe.frame.active{display:block}
+
+  @media (max-width:720px){
+    .app{
+      max-width:none;
+      border:0;
+      flex-direction:column;
+    }
+    aside.sidebar{
+      flex:0 0 auto;
+      width:100%;
+      border-right:none;
+      border-bottom:1px solid var(--line);
+      overflow:visible;
+    }
+    .side-top{padding:10px 12px;border-bottom:none}
+    .theme-switch{max-width:220px;margin:0 auto}
+    .side-nav{
+      display:flex;
+      flex-direction:row;
+      overflow-x:auto;
+      padding:6px 10px 12px;
+      gap:6px;
+    }
+    .nav-cat{display:none}
+    button.nav-item{width:auto;white-space:nowrap;padding:8px 14px}
+    button.nav-item.active::before{display:none}
+  }
+</style>
+</head>
+<body>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="side-top">
+        <div class="theme-switch" id="themeSwitch" role="group" aria-label="Тема оформления">
+          <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+          </button>
+          <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+        </div>
+      </div>
+      <nav class="side-nav" id="nav"></nav>
+    </aside>
+
+    <main id="stage"></main>
+  </div>
+
+<script>
+  const catalog = [
+    {
+      name: "Обзор",
+      color: "#c9a24a",
+      items: [
+        { title: "Каталог книг", file: "catalog.html" }
+      ]
+    },
+    {
+      name: "Деньги и инвестиции",
+      color: "#4f9e8a",
+      items: [
+        { title: "Самый богатый человек в Вавилоне", file: "Самый-богатый-человек-в-Вавилоне.html" },
+        { title: "Разумный инвестор — Грэм", file: "Бенджамин-Грэм-Разумный-инвестор.html" },
+        { title: "Руководство разумного инвестора — Богл", file: "Джон-Богл-Руководство-разумного-инвестора.html" }
+      ]
+    },
+    {
+      name: "Развитие и время",
+      color: "#6d7fb8",
+      items: [
+        { title: "Альманах Наваля", file: "Альманах-Наваля.html" },
+        { title: "4000 недель — Беркман", file: "Оливер-Беркман-4000-недель.html" }
+      ]
+    }
+  ];
+
+  const KEY = "book-theme";
+  const navEl    = document.getElementById("nav");
+  const stage    = document.getElementById("stage");
+  const switchEl = document.getElementById("themeSwitch");
+  const frames   = [];
+  const buttons  = [];
+  const items    = [];
+
+  function readTheme() {
+    try {
+      var s = localStorage.getItem(KEY);
+      return (s === "dark" || s === "beige") ? s : null;
+    } catch (e) { return null; }
+  }
+  function saveTheme(t) { try { localStorage.setItem(KEY, t); } catch (e) {} }
+
+  let currentTheme = document.documentElement.getAttribute("data-theme") || readTheme() || "beige";
+
+  // ---- меню по категориям + фреймы ----
+  let idx = 0;
+  catalog.forEach(function (cat) {
+    const label = document.createElement("div");
+    label.className = "nav-cat";
+    label.textContent = cat.name;
+    navEl.appendChild(label);
+
+    cat.items.forEach(function (book) {
+      const i = idx++;
+      items.push(book);
+
+      const btn = document.createElement("button");
+      btn.className = "nav-item" + (i === 0 ? " active" : "");
+      btn.type = "button";
+      btn.style.setProperty("--cat", cat.color);
+      btn.innerHTML = '<span class="dot"></span><span class="txt"></span>';
+      btn.querySelector(".txt").textContent = book.title;
+      btn.addEventListener("click", function () { activate(i); });
+      navEl.appendChild(btn);
+      buttons.push(btn);
+
+      const frame = document.createElement("iframe");
+      frame.className = "frame" + (i === 0 ? " active" : "");
+      frame.setAttribute("title", book.title);
+      frame.dataset.src = book.file;
+      stage.appendChild(frame);
+      frames.push(frame);
+    });
+  });
+
+  function fileUrl(file) {
+    // encodeURI кодирует кириллицу в имени файла; ?theme= задаёт тему при первой загрузке
+    return encodeURI(file) + "?theme=" + currentTheme;
+  }
+
+  function postTheme(frame) {
+    if (!frame || !frame.getAttribute("src") || !frame.contentWindow) return;
+    try {
+      frame.contentWindow.postMessage({ type: "book-theme", theme: currentTheme }, "*");
+    } catch (e) {}
+  }
+  function broadcast() { frames.forEach(postTheme); }
+
+  function activate(index) {
+    buttons.forEach(function (b, k) { b.classList.toggle("active", k === index); });
+    frames.forEach(function (f, k) {
+      const on = (k === index);
+      f.classList.toggle("active", on);
+      if (on) {
+        if (!f.getAttribute("src")) {
+          f.setAttribute("src", fileUrl(f.dataset.src));
+        } else {
+          postTheme(f);
+        }
+      }
+    });
+  }
+
+  function refreshSwitch() {
+    const bs = switchEl.querySelectorAll("button");
+    for (let i = 0; i < bs.length; i++) {
+      bs[i].classList.toggle("active", bs[i].getAttribute("data-value") === currentTheme);
+    }
+  }
+
+  function setTheme(t) {
+    if (t !== "dark" && t !== "beige") return;
+    currentTheme = t;
+    document.documentElement.setAttribute("data-theme", t);
+    saveTheme(t);
+    refreshSwitch();
+    broadcast();
+  }
+
+  switchEl.addEventListener("click", function (e) {
+    const b = e.target.closest ? e.target.closest("button") : null;
+    if (!b) return;
+    setTheme(b.getAttribute("data-value"));
+  });
+
+  // тема, переключённая внутри книги, применяется ко всей оболочке
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (d && d.type === "book-theme" && (d.theme === "dark" || d.theme === "beige")) {
+      if (d.theme !== currentTheme) { setTheme(d.theme); }
+    }
+  });
+
+  refreshSwitch();
+  activate(0);
+</script>
+
+</body>
+</html>
