@@ -402,11 +402,10 @@ article.card.is-read:hover{opacity:1}
 
 @media (max-width:720px){
   .page-tools .read-toggle{display:none}
-  .progress-chip{display:none}
   .to-top{display:none}
-  .wrap{padding-bottom:104px}
+  body .wrap{padding-bottom:104px}
 
-  .page-bar{
+  body .page-bar{
     display:flex;
     position:fixed;left:0;right:0;bottom:0;z-index:1200;
     align-items:center;justify-content:space-between;gap:10px;
