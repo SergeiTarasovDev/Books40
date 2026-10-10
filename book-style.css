@@ -407,6 +407,8 @@ article.card.is-read:hover{opacity:1}
 @media (max-width:720px), (hover:none) and (pointer:coarse){
   .page-tools .read-toggle{display:none}
   .to-top{display:none}
+  body .progress-chip{display:none}
+  body .read-progress{display:none}
   body .wrap{padding-bottom:104px}
 
   body .page-bar{
