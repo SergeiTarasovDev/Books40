@@ -37,7 +37,9 @@
     } catch (e) { return ""; }
   }
   var FILE = fileName();
-  var isBookPage = FILE && FILE !== "catalog.html" && FILE !== "index.html" && FILE.indexOf(".html") >= 0;
+  var isBookPage = FILE && FILE !== "catalog.html" && FILE !== "index.html"
+    && FILE.indexOf(".html") >= 0
+    && document.documentElement.getAttribute("data-kind") !== "page";
 
   var embedded = (window.parent && window.parent !== window);
 

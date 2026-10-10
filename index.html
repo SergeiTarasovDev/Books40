@@ -26,6 +26,7 @@
     --frame:#fffdf9;
     --scroll:#cfc4ab;
     --accent-line:#e7d6ac;
+    --paper:#fffdf9;
     --outside:#e7dfcd;
   }
   html[data-theme="dark"]{
@@ -38,6 +39,7 @@
     --frame:#12161c;
     --scroll:#333d49;
     --accent-line:#4a3d24;
+    --paper:#1a2029;
     --outside:#0b0e13;
   }
   *{box-sizing:border-box}
@@ -438,7 +440,8 @@
       name: "Каталог",
       color: "#c9a24a",
       items: [
-        { title: "Каталог книг", file: "catalog.html" }
+        { title: "Каталог книг", file: "catalog.html" },
+        { title: "Смена работы: Data Engineer", file: "Смена-работы-Data-Engineer.html", noCheck: true }
       ]
     },
     {
@@ -630,7 +633,7 @@
       row.className = "nav-row";
       row.appendChild(btn);
 
-      if (book.file !== "catalog.html") {
+      if (book.file !== "catalog.html" && !book.noCheck) {
         const chk = document.createElement("button");
         chk.type = "button";
         chk.className = "nav-check";

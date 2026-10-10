@@ -250,6 +250,10 @@ footer{
 }
 footer a{color:var(--accent)}
 
+/* ссылки в тексте страниц */
+article.chapter a{color:var(--accent);text-decoration:none}
+article.chapter a:hover{text-decoration:underline}
+
 /* ---------- метки (теги) ---------- */
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .tag{
