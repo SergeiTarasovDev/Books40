@@ -132,6 +132,44 @@
     background-clip:padding-box;
   }
 
+  /* строки меню с отметкой «прочитано» */
+  .nav-row{display:flex;align-items:center;gap:2px}
+  .nav-row button.nav-item{flex:1 1 auto;width:auto}
+  button.nav-check{
+    flex:0 0 auto;
+    appearance:none;border:0;background:transparent;cursor:pointer;
+    width:34px;height:34px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    color:var(--muted);
+  }
+  button.nav-check:hover{background:var(--chrome-2)}
+  button.nav-check .mark{
+    width:18px;height:18px;border-radius:50%;
+    border:1.5px solid var(--line);
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;line-height:1;color:transparent;
+    transition:background .15s ease,border-color .15s ease,color .15s ease;
+  }
+  button.nav-check.read .mark{background:var(--gold);border-color:var(--gold);color:#fff}
+  button.nav-item.is-read .txt{opacity:.5;text-decoration:line-through;text-decoration-color:var(--muted)}
+
+  /* статистика и экспорт/импорт отметок */
+  .side-foot{
+    flex:0 0 auto;
+    border-top:1px solid var(--line);
+    padding:12px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .read-stat{font-size:12.5px;color:var(--muted)}
+  .read-stat b{color:var(--gold)}
+  .read-actions{display:flex;gap:6px}
+  .read-actions button{
+    flex:1 1 0;appearance:none;font-family:inherit;font-size:12px;font-weight:600;
+    color:var(--text);background:var(--chrome-2);border:1px solid var(--line);
+    border-radius:9px;padding:7px 8px;cursor:pointer;
+  }
+  .read-actions button:hover{border-color:var(--gold);color:var(--gold)}
+
   .nav-cat{
     font-size:10.5px;
     font-weight:700;
@@ -280,6 +318,15 @@
         </div>
       </div>
       <nav class="side-nav" id="nav"></nav>
+      <div class="side-foot">
+        <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
+        <div class="read-actions">
+          <button type="button" id="readExport">Экспорт</button>
+          <button type="button" id="readImport">Импорт</button>
+          <button type="button" id="readReset">Сброс</button>
+        </div>
+        <input type="file" id="readFile" accept="application/json,.json" hidden>
+      </div>
     </aside>
 
     <div class="scrim" id="scrim"></div>
@@ -424,6 +471,8 @@
   const frames    = [];
   const buttons   = [];
   const items     = [];
+  const readFiles = [];
+  const checkByFile = {};
 
   function readTheme() {
     try {
@@ -454,8 +503,25 @@
       btn.innerHTML = '<span class="dot"></span><span class="txt"></span>';
       btn.querySelector(".txt").textContent = book.title;
       btn.addEventListener("click", function () { activate(i); });
-      navEl.appendChild(btn);
       buttons.push(btn);
+
+      const row = document.createElement("div");
+      row.className = "nav-row";
+      row.appendChild(btn);
+
+      if (book.file !== "catalog.html") {
+        const chk = document.createElement("button");
+        chk.type = "button";
+        chk.className = "nav-check";
+        chk.innerHTML = '<span class="mark">✓</span>';
+        chk.title = "Отметить прочитанной";
+        chk.addEventListener("click", function () { toggleRead(book.file); });
+        checkByFile[book.file] = chk;
+        readFiles.push(book.file);
+        row.appendChild(chk);
+      }
+
+      navEl.appendChild(row);
 
       const frame = document.createElement("iframe");
       frame.className = "frame" + (i === 0 ? " active" : "");
@@ -488,6 +554,7 @@
           f.setAttribute("src", fileUrl(f.dataset.src));
         } else {
           postTheme(f);
+          postRead(f);
         }
       }
     });
@@ -530,14 +597,105 @@
     if (e.key === "Escape") closeNav();
   });
 
-  // тема, переключённая внутри книги, применяется ко всей оболочке
+  // синхронизация с содержимым вкладок (тема и отметки «прочитано»)
   window.addEventListener("message", function (e) {
     var d = e.data;
-    if (d && d.type === "book-theme" && (d.theme === "dark" || d.theme === "beige")) {
+    if (!d) return;
+    if (d.type === "book-theme" && (d.theme === "dark" || d.theme === "beige")) {
       if (d.theme !== currentTheme) { setTheme(d.theme); }
+    } else if (d.type === "books-read" && Array.isArray(d.list)) {
+      setReadList(d.list);
+      broadcastRead();
     }
   });
 
+  // ---- отметки «прочитано» ----
+  const READ_KEY = "books-read";
+  const readCountEl = document.getElementById("readCount");
+  const readTotalEl = document.getElementById("readTotal");
+  const readFileEl  = document.getElementById("readFile");
+
+  function loadRead() {
+    try { return JSON.parse(localStorage.getItem(READ_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveRead(o) {
+    try { localStorage.setItem(READ_KEY, JSON.stringify(o)); } catch (e) {}
+  }
+  let readMap = loadRead();
+
+  function refreshRead() {
+    readTotalEl.textContent = String(readFiles.length);
+    let n = 0;
+    readFiles.forEach(function (file) {
+      const on = !!readMap[file];
+      if (on) n++;
+      const chk = checkByFile[file];
+      if (chk) {
+        chk.classList.toggle("read", on);
+        chk.title = on ? "Снять отметку" : "Отметить прочитанной";
+        const item = chk.parentElement.querySelector(".nav-item");
+        if (item) item.classList.toggle("is-read", on);
+      }
+    });
+    readCountEl.textContent = String(n);
+  }
+  function toggleRead(file) {
+    if (readMap[file]) { delete readMap[file]; } else { readMap[file] = 1; }
+    saveRead(readMap);
+    refreshRead();
+    broadcastRead();
+  }
+  function setReadList(list) {
+    readMap = {};
+    (list || []).forEach(function (f) { readMap[f] = 1; });
+    saveRead(readMap);
+    refreshRead();
+  }
+  function postRead(frame) {
+    if (!frame || !frame.getAttribute("src") || !frame.contentWindow) return;
+    try {
+      frame.contentWindow.postMessage({ type: "books-read", list: Object.keys(readMap) }, "*");
+    } catch (e) {}
+  }
+  function broadcastRead() { frames.forEach(postRead); }
+
+  document.getElementById("readExport").addEventListener("click", function () {
+    const data = JSON.stringify(Object.keys(readMap), null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "books-read.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  document.getElementById("readImport").addEventListener("click", function () { readFileEl.click(); });
+  readFileEl.addEventListener("change", function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const arr = Array.isArray(parsed) ? parsed : Object.keys(parsed || {});
+        setReadList(arr);
+        broadcastRead();
+      } catch (e) {}
+    };
+    reader.readAsText(file);
+    this.value = "";
+  });
+  document.getElementById("readReset").addEventListener("click", function () {
+    if (window.confirm("Сбросить все отметки «прочитано»?")) {
+      readMap = {};
+      saveRead(readMap);
+      refreshRead();
+      broadcastRead();
+    }
+  });
+
+  refreshRead();
   refreshSwitch();
   activate(0);
 </script>

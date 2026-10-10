@@ -331,9 +331,29 @@ html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
   background-clip:padding-box;
 }
 
-/* ---------- переключатель темы (на отдельной странице) ---------- */
-.theme-toggle{
+/* ---------- инструменты страницы (прочитано + тема) ---------- */
+.page-tools{
   position:fixed;top:16px;right:16px;z-index:1000;
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;
+}
+.read-toggle{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:600;
+  color:var(--muted);background:var(--paper);border:1px solid var(--line);
+  border-radius:999px;padding:8px 15px;cursor:pointer;box-shadow:var(--shadow);
+  transition:color .15s ease,border-color .15s ease;
+}
+.read-toggle:hover{color:var(--accent);border-color:var(--accent)}
+.read-toggle .mark{
+  width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;line-height:1;color:transparent;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.read-toggle.read{color:var(--accent);border-color:var(--accent)}
+.read-toggle.read .mark{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.theme-toggle{
   display:inline-flex;gap:2px;padding:4px;
   background:var(--paper);border:1px solid var(--line);
   border-radius:999px;box-shadow:var(--shadow);
@@ -347,6 +367,33 @@ html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
 .theme-toggle button:hover{color:var(--accent)}
 .theme-toggle button.active{background:var(--accent-bg);color:var(--accent)}
 .theme-toggle svg{width:16px;height:16px}
+
+/* ---------- отметка «прочитано» в каталоге ---------- */
+article.card{position:relative}
+.card-read{
+  margin-top:12px;align-self:flex-start;
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:600;
+  color:var(--muted);background:transparent;border:1px solid var(--line);
+  border-radius:999px;padding:5px 12px;cursor:pointer;
+  transition:color .15s ease,border-color .15s ease;
+}
+.card-read:hover{color:var(--accent);border-color:var(--accent)}
+.card-read .mark{
+  width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;line-height:1;color:transparent;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.card-read.read{color:var(--accent);border-color:var(--accent)}
+.card-read.read .mark{background:var(--accent);border-color:var(--accent);color:#fff}
+article.card.is-read{opacity:.6}
+article.card.is-read:hover{opacity:1}
+
+@media (max-width:620px){
+  .read-toggle .lbl{display:none}
+  .read-toggle{padding:8px 11px}
+}
 
 @media (max-width:620px){
   body{font-size:15px}

@@ -812,5 +812,56 @@
   </footer>
 
 </div>
+<script>
+(function () {
+  var KEY = "books-read";
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function save(o){ try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  var read = load();
+  var embedded = (window.parent && window.parent !== window);
+  var cards = Array.prototype.slice.call(document.querySelectorAll("article.card"));
+
+  cards.forEach(function (card) {
+    var link = card.querySelector("a.more[href]");
+    if (!link) return;
+    var file = link.getAttribute("href");
+    card.dataset.file = file;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "card-read";
+    btn.innerHTML = '<span class="mark">✓</span> Прочитано';
+    btn.addEventListener("click", function () {
+      if (read[file]) { delete read[file]; } else { read[file] = 1; }
+      save(read); render(); notify();
+    });
+    card.appendChild(btn);
+  });
+
+  function render() {
+    cards.forEach(function (card) {
+      var f = card.dataset.file;
+      if (!f) return;
+      var on = !!read[f];
+      card.classList.toggle("is-read", on);
+      var b = card.querySelector(".card-read");
+      if (b) { b.classList.toggle("read", on); b.title = on ? "Снять отметку" : "Отметить прочитанной"; }
+    });
+  }
+  function notify() {
+    if (embedded) {
+      try { window.parent.postMessage({ type: "books-read", list: Object.keys(read) }, "*"); } catch (e) {}
+    }
+  }
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (d && d.type === "books-read" && Array.isArray(d.list)) {
+      read = {};
+      d.list.forEach(function (f) { read[f] = 1; });
+      save(read); render();
+    }
+  });
+  render();
+})();
+</script>
 </body>
 </html>
