@@ -289,7 +289,48 @@ html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
 .theme-toggle svg{width:16px;height:16px}
 
 @media (max-width:620px){
-  nav.toc ul{columns:1}
-  article.chapter{padding:22px 18px}
+  body{font-size:15px}
+  .wrap{padding:0 16px 64px}
+
+  header.hero{padding:40px 0 22px;margin-bottom:20px}
+  h1{font-size:clamp(24px,7vw,32px)}
+  .subtitle{font-size:16px}
+  .hero p.lead{font-size:15.5px}
+  .meta-row{gap:8px;margin-top:16px}
+  .pill{font-size:12px;padding:5px 11px}
+  .note{font-size:13.5px;padding:14px 16px;margin-bottom:24px}
+
+  nav.toc{padding:16px 18px;margin-bottom:32px}
+  nav.toc h2{font-size:14px}
+  nav.toc ul{columns:1;font-size:13.5px}
+
+  section.part,section.category{margin-bottom:40px}
+  .part-head{margin-bottom:24px;padding-bottom:12px}
+  .part-head h2{font-size:24px}
+  .part-head p{font-size:14.5px}
+  .cat-head h2{font-size:22px}
+  .cat-desc{font-size:14.5px;margin-bottom:22px}
+
+  article.chapter{padding:20px 16px;margin-bottom:18px}
   .ch-head{gap:12px}
+  .ch-num{width:32px;height:32px;font-size:13px}
+  .ch-title h3{font-size:19.5px}
+  .ch-title .en{font-size:12.5px}
+  .lead{font-size:15px}
+  .blocklabel{font-size:11px;margin:18px 0 6px}
+  ul.keys li{font-size:14.5px;padding-left:20px;margin-bottom:7px}
+  ol.laws li,ol.tools li,ol.rules-list li{font-size:14.5px;padding:10px 0 10px 46px}
+  ol.laws li::before,ol.tools li::before,ol.rules-list li::before{width:26px;height:26px;font-size:12px;top:10px}
+  blockquote.quote{font-size:15px;padding:12px 16px}
+  .insight{font-size:14.5px;padding:14px 16px}
+  .checklist li{font-size:14.5px}
+
+  .grid{gap:14px}
+  article.card{padding:18px}
+  .card h3{font-size:16.5px}
+  .card p.desc{font-size:14px}
+  .author{font-size:13px}
+  .why{font-size:13px}
+
+  footer{font-size:12.5px;margin-top:24px}
 }

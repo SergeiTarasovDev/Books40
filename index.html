@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Конспекты книг</title>
 <script>
   /* Тема применяется до отрисовки, чтобы не было мигания. */
@@ -48,8 +48,6 @@
     transition:background .2s ease,color .2s ease;
   }
 
-  /* Центрируем всё приложение и ограничиваем ширину,
-     чтобы меню не «убегало» далеко от содержимого на широких экранах. */
   .app{
     height:100%;
     max-width:1440px;
@@ -59,6 +57,24 @@
     border-left:1px solid var(--line);
     border-right:1px solid var(--line);
   }
+
+  /* мобильная верхняя панель (видна только на узких экранах) */
+  .mobile-bar{display:none}
+  .icon-btn{
+    appearance:none;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+    width:42px;
+    height:36px;
+    border-radius:10px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+  }
+  .icon-btn:hover{color:var(--gold);border-color:var(--gold)}
+  .icon-btn svg{width:20px;height:20px}
 
   /* ---------- меню слева ---------- */
   aside.sidebar{
@@ -70,7 +86,6 @@
     border-right:1px solid var(--line);
     overflow:hidden;
   }
-
   .side-top{
     flex:0 0 auto;
     padding:14px 14px 12px;
@@ -117,7 +132,6 @@
     background-clip:padding-box;
   }
 
-  /* заголовки разделов — приглушённые, с разделителем */
   .nav-cat{
     font-size:10.5px;
     font-weight:700;
@@ -131,7 +145,6 @@
   }
   .nav-cat:first-child{border-top:0;margin-top:0;padding-top:8px}
 
-  /* пункты — заметно ярче заголовков */
   button.nav-item{
     width:100%;
     appearance:none;
@@ -168,6 +181,9 @@
     border-radius:0 3px 3px 0;background:var(--gold);
   }
 
+  /* затемнение под выдвижным меню */
+  .scrim{display:none}
+
   /* ---------- контент ---------- */
   main#stage{
     position:relative;
@@ -186,40 +202,75 @@
   }
   iframe.frame.active{display:block}
 
+  /* ---------- мобильная версия ---------- */
   @media (max-width:720px){
-    .app{
-      max-width:none;
-      border:0;
-      flex-direction:column;
-    }
-    aside.sidebar{
-      flex:0 0 auto;
-      width:100%;
-      border-right:none;
-      border-bottom:1px solid var(--line);
-      overflow:visible;
-    }
-    .side-top{padding:10px 12px;border-bottom:none}
-    .theme-switch{max-width:220px;margin:0 auto}
-    .side-nav{
+    .app{max-width:none;border:0;flex-direction:column}
+
+    .mobile-bar{
       display:flex;
-      flex-direction:row;
-      overflow-x:auto;
-      padding:6px 10px 12px;
-      gap:6px;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex:0 0 auto;
+      padding:8px 12px;
+      padding-top:calc(8px + env(safe-area-inset-top));
+      background:var(--chrome);
+      border-bottom:1px solid var(--line);
     }
-    .nav-cat{display:none}
-    button.nav-item{width:auto;white-space:nowrap;padding:8px 14px}
-    button.nav-item.active::before{display:none}
+    .mobile-bar .theme-switch{width:auto}
+
+    aside.sidebar{
+      position:fixed;
+      top:0;left:0;bottom:0;
+      width:min(84vw,320px);
+      border-right:1px solid var(--line);
+      transform:translateX(-100%);
+      transition:transform .22s ease;
+      z-index:50;
+      box-shadow:0 0 30px rgba(0,0,0,.35);
+    }
+    .app.nav-open aside.sidebar{transform:translateX(0)}
+
+    .side-top{display:none}
+    .side-nav{padding:14px 12px calc(18px + env(safe-area-inset-bottom))}
+
+    .scrim{
+      display:block;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .2s ease,visibility .2s ease;
+      z-index:40;
+    }
+    .app.nav-open .scrim{opacity:1;visibility:visible}
+
+    main#stage{flex:1 1 auto;min-height:0}
   }
 </style>
 </head>
 <body>
 
-  <div class="app">
-    <aside class="sidebar">
+  <div class="app" id="app">
+
+    <div class="mobile-bar">
+      <button class="icon-btn" id="menuBtn" type="button" aria-label="Меню" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <div class="theme-switch" role="group" aria-label="Тема оформления">
+        <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+        </button>
+        <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
       <div class="side-top">
-        <div class="theme-switch" id="themeSwitch" role="group" aria-label="Тема оформления">
+        <div class="theme-switch" role="group" aria-label="Тема оформления">
           <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
           </button>
@@ -230,6 +281,8 @@
       </div>
       <nav class="side-nav" id="nav"></nav>
     </aside>
+
+    <div class="scrim" id="scrim"></div>
 
     <main id="stage"></main>
   </div>
@@ -263,12 +316,14 @@
   ];
 
   const KEY = "book-theme";
-  const navEl    = document.getElementById("nav");
-  const stage    = document.getElementById("stage");
-  const switchEl = document.getElementById("themeSwitch");
-  const frames   = [];
-  const buttons  = [];
-  const items    = [];
+  const appEl     = document.getElementById("app");
+  const navEl     = document.getElementById("nav");
+  const stage     = document.getElementById("stage");
+  const scrimEl   = document.getElementById("scrim");
+  const menuBtn   = document.getElementById("menuBtn");
+  const frames    = [];
+  const buttons   = [];
+  const items     = [];
 
   function readTheme() {
     try {
@@ -312,7 +367,6 @@
   });
 
   function fileUrl(file) {
-    // encodeURI кодирует кириллицу в имени файла; ?theme= задаёт тему при первой загрузке
     return encodeURI(file) + "?theme=" + currentTheme;
   }
 
@@ -337,15 +391,15 @@
         }
       }
     });
+    closeNav();
   }
 
+  // ---- тема ----
   function refreshSwitch() {
-    const bs = switchEl.querySelectorAll("button");
-    for (let i = 0; i < bs.length; i++) {
-      bs[i].classList.toggle("active", bs[i].getAttribute("data-value") === currentTheme);
-    }
+    document.querySelectorAll(".theme-switch button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-value") === currentTheme);
+    });
   }
-
   function setTheme(t) {
     if (t !== "dark" && t !== "beige") return;
     currentTheme = t;
@@ -354,11 +408,26 @@
     refreshSwitch();
     broadcast();
   }
+  document.addEventListener("click", function (e) {
+    const b = e.target.closest ? e.target.closest(".theme-switch button") : null;
+    if (b) setTheme(b.getAttribute("data-value"));
+  });
 
-  switchEl.addEventListener("click", function (e) {
-    const b = e.target.closest ? e.target.closest("button") : null;
-    if (!b) return;
-    setTheme(b.getAttribute("data-value"));
+  // ---- выдвижное меню ----
+  function openNav() {
+    appEl.classList.add("nav-open");
+    menuBtn.setAttribute("aria-expanded", "true");
+  }
+  function closeNav() {
+    appEl.classList.remove("nav-open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+  menuBtn.addEventListener("click", function () {
+    appEl.classList.contains("nav-open") ? closeNav() : openNav();
+  });
+  scrimEl.addEventListener("click", closeNav);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeNav();
   });
 
   // тема, переключённая внутри книги, применяется ко всей оболочке
