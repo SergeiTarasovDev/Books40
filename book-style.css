@@ -19,6 +19,7 @@ html[data-theme="beige"]{
   --alt:#8c3b22;
   --alt-ink:#5c2a18;
   --alt-bg:#fbeee7;
+  --alt-bg-2:#f3dccb;
   --alt-line:#e2c3b2;
   --shadow:0 4px 20px rgba(60,50,25,.08);
   --radius:14px;
@@ -38,6 +39,7 @@ html[data-theme="dark"]{
   --alt:#6fb2a1;
   --alt-ink:#a9d8cb;
   --alt-bg:#152420;
+  --alt-bg-2:#101b18;
   --alt-line:#2f4a41;
   --shadow:0 4px 20px rgba(0,0,0,.35);
   --radius:14px;
@@ -230,7 +232,7 @@ blockquote.quote .src{
   color:var(--alt-ink);
 }
 .insight .tag{
-  display:flex;
+  display:inline-flex;
   align-items:center;
   gap:8px;
   font-family:"Segoe UI",Arial,sans-serif;
@@ -239,7 +241,10 @@ blockquote.quote .src{
   letter-spacing:.12em;
   text-transform:uppercase;
   color:var(--alt);
-  margin:0 0 8px;
+  background:var(--alt-bg-2);
+  padding:4px 12px;
+  border-radius:999px;
+  margin:0 0 10px;
 }
 .insight .tag::before{
   content:"";
