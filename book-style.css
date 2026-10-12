@@ -420,6 +420,11 @@ article.card{position:relative}
 article.card.is-read{opacity:.6}
 article.card.is-read:hover{opacity:1}
 
+@media (orientation: landscape) and (max-height: 560px) and (pointer: coarse){
+  body.embedded .page-bar{display:none}
+  body.embedded .page-tools{display:none}
+}
+
 @media (max-width:720px), (hover:none) and (pointer:coarse){
   .page-tools .read-toggle{display:none}
   .to-top{display:none}

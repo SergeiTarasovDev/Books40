@@ -49,6 +49,7 @@
   }
 
   onReady(function () {
+    if (embedded) { document.body.classList.add("embedded"); }
     var readBtn = null, readBar = null, finishBtn = null;
     var chip = null, barProgress = null;
     var toTop = null, toTopBar = null;
@@ -168,6 +169,9 @@
         chip.textContent = label;
         barProgress.textContent = label;
         toTop.classList.toggle("show", r.top > 300);
+        if (embedded) {
+          try { window.parent.postMessage({ type: "book-progress", file: FILE, pct: r.pct, idx: r.idx, total: r.total }, "*"); } catch (e) {}
+        }
       }
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll);
@@ -217,6 +221,7 @@
         if (!d) return;
         if (d.type === "book-theme" && valid(d.theme)) { applyTheme(d.theme); saveTheme(d.theme); refreshTheme(); }
         else if (d.type === "books-read" && Array.isArray(d.list)) { setReadList(d.list); }
+        else if (d.type === "book-scroll-top") { window.scrollTo({ top: 0, behavior: "smooth" }); }
       });
     }
 

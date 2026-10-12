@@ -327,6 +327,28 @@
     .topbar #nav .menu-group.open .menu-panel{display:block}
   }
 
+  /* ---------- нижняя панель (смартфон в альбомной ориентации) ---------- */
+  .app-foot{display:none}
+  .foot-book{display:flex;align-items:center;gap:8px}
+  .foot-read,.foot-top{
+    appearance:none;font-family:inherit;font-size:12.5px;font-weight:600;
+    color:var(--text);background:var(--chrome-2);border:1px solid var(--line);
+    border-radius:999px;padding:7px 12px;cursor:pointer;
+  }
+  .foot-read.read{background:var(--gold);border-color:var(--gold);color:var(--paper)}
+  .foot-prog{font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;font-weight:700;color:var(--gold);white-space:nowrap}
+  .app-foot .theme-switch{width:auto}
+
+  @media (orientation: landscape) and (max-height: 560px) and (pointer: coarse){
+    .mobile-bar{display:none}
+    .app-foot{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      flex:0 0 auto;
+      padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+      background:var(--chrome);border-top:1px solid var(--line);
+    }
+  }
+
   /* ---------- мобильная версия ---------- */
   @media (max-width:720px), (hover:none) and (pointer:coarse){
     .app{max-width:none;border:0;flex-direction:column}
@@ -432,6 +454,25 @@
     <div class="scrim" id="scrim"></div>
 
     <main id="stage"></main>
+
+    <div class="app-foot" id="appFoot">
+      <button type="button" class="icon-btn" id="footMenu" aria-label="Меню">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <div class="foot-book" id="footBook">
+        <button type="button" class="foot-read" id="footRead">Прочитано</button>
+        <span class="foot-prog" id="footProg">0%</span>
+        <button type="button" class="foot-top" id="footTop">Наверх</button>
+      </div>
+      <div class="theme-switch" role="group" aria-label="Тема оформления">
+        <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+        </button>
+        <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -691,6 +732,10 @@
         }
       }
     });
+    currentBookFile = (items[index] && items[index].file !== "catalog.html") ? items[index].file : null;
+    if (footBook) footBook.style.display = currentBookFile ? "flex" : "none";
+    if (footProg) footProg.textContent = "0%";
+    refreshFootRead();
     closeNav();
   }
 
@@ -739,6 +784,8 @@
     } else if (d.type === "books-read" && Array.isArray(d.list)) {
       setReadList(d.list);
       broadcastRead();
+    } else if (d.type === "book-progress" && d.file && d.file === currentBookFile) {
+      if (footProg) footProg.textContent = d.total ? (d.pct + "% · глава " + d.idx + "/" + d.total) : (d.pct + "%");
     }
   });
 
@@ -762,6 +809,12 @@
   const READ_KEY = "books-read";
   const readCountEl = document.getElementById("readCount");
   const readTotalEl = document.getElementById("readTotal");
+  const footBook  = document.getElementById("footBook");
+  const footRead  = document.getElementById("footRead");
+  const footProg  = document.getElementById("footProg");
+  const footTop   = document.getElementById("footTop");
+  const footMenu  = document.getElementById("footMenu");
+  let currentBookFile = null;
 
   function loadRead() {
     try { return JSON.parse(localStorage.getItem(READ_KEY)) || {}; } catch (e) { return {}; }
@@ -786,6 +839,13 @@
       }
     });
     readCountEl.textContent = String(n);
+    refreshFootRead();
+  }
+  function refreshFootRead() {
+    if (!footRead) return;
+    const on = !!(currentBookFile && readMap[currentBookFile]);
+    footRead.classList.toggle("read", on);
+    footRead.textContent = on ? "Прочитано ✓" : "Прочитано";
   }
   function toggleRead(file) {
     if (readMap[file]) { delete readMap[file]; } else { readMap[file] = 1; }
@@ -806,6 +866,24 @@
     } catch (e) {}
   }
   function broadcastRead() { frames.forEach(postRead); }
+
+  function postToActiveBook(msg) {
+    if (!currentBookFile) return;
+    items.forEach(function (b, k) {
+      if (b.file === currentBookFile && frames[k] && frames[k].contentWindow) {
+        try { frames[k].contentWindow.postMessage(msg, "*"); } catch (e) {}
+      }
+    });
+  }
+  if (footMenu) footMenu.addEventListener("click", function () {
+    appEl.classList.contains("nav-open") ? closeNav() : openNav();
+  });
+  if (footRead) footRead.addEventListener("click", function () {
+    if (currentBookFile) toggleRead(currentBookFile);
+  });
+  if (footTop) footTop.addEventListener("click", function () {
+    postToActiveBook({ type: "book-scroll-top" });
+  });
 
   // ---- адаптивная раскладка: меню сверху (десктоп) или в панели (смартфон) ----
   const footEl = document.getElementById("sideFoot");
