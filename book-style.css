@@ -232,7 +232,8 @@ blockquote.quote .src{
   color:var(--alt-ink);
 }
 .insight .tag{
-  display:inline-flex;
+  display:flex;
+  width:fit-content;
   align-items:center;
   gap:8px;
   font-family:"Segoe UI",Arial,sans-serif;
