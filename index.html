@@ -172,17 +172,37 @@
     padding:12px;
     display:flex;flex-direction:column;gap:8px;
   }
-  .resume{display:none}
+  .resume{display:none;position:relative}
   .resume.show{display:block}
-  .resume button{
+  .resume-toggle{
     display:flex;align-items:center;gap:8px;width:100%;appearance:none;font:inherit;
     font-size:12.5px;text-align:left;color:var(--text);cursor:pointer;
     background:var(--chrome-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;
   }
-  .resume button:hover{border-color:var(--gold)}
-  .resume .resume-lbl{color:var(--muted);white-space:nowrap}
-  .resume .resume-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-  .resume .resume-meta{margin-left:auto;color:var(--gold);font-weight:700;white-space:nowrap}
+  .resume-toggle:hover{border-color:var(--gold)}
+  .resume-lbl{color:var(--muted);white-space:nowrap}
+  .resume-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .resume-meta{margin-left:auto;color:var(--gold);font-weight:700;white-space:nowrap}
+  .resume-list{
+    display:none;margin-top:6px;max-height:52vh;overflow:auto;padding:6px;
+    background:var(--chrome);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  .resume.open .resume-list{display:block}
+  .resume-row{display:flex;align-items:stretch;gap:4px}
+  .resume-item{
+    flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0;
+    appearance:none;font:inherit;text-align:left;color:var(--text);cursor:pointer;
+    background:transparent;border:0;border-radius:8px;padding:7px 8px;
+  }
+  .resume-item:hover{background:var(--chrome-2)}
+  .resume-item b{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .resume-item span{font-size:11.5px;color:var(--muted)}
+  .resume-del{
+    appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
+    border-radius:8px;padding:0 8px;font-size:16px;line-height:1;
+  }
+  .resume-del:hover{color:var(--gold);background:var(--chrome-2)}
   .read-stat{font-size:12.5px;color:var(--muted)}
   .read-stat b{color:var(--gold)}
   .read-actions{display:flex;gap:6px}
@@ -296,7 +316,8 @@
       border-top:0;padding:0;margin:0;
     }
     .topbar-side .resume{margin:0}
-    .topbar-side .resume button{width:auto;max-width:280px}
+    .topbar-side .resume-toggle{width:auto;max-width:280px}
+    .topbar-side .resume-list{position:absolute;right:0;top:calc(100% + 8px);width:340px;z-index:60}
     .topbar-side .read-stat{white-space:nowrap}
     .topbar-side .read-actions{gap:6px}
     .topbar-side .read-actions button{padding:6px 10px}
@@ -459,11 +480,12 @@
       </nav>
       <div class="side-foot" id="sideFoot">
         <div class="resume" id="resumeBox">
-          <button type="button" id="resumeBtn" title="Продолжить с последнего места">
+          <button type="button" id="resumeBtn" class="resume-toggle" title="История чтения">
             <span class="resume-lbl">Продолжить:</span>
             <span class="resume-title" id="resumeTitle"></span>
             <span class="resume-meta" id="resumeMeta"></span>
           </button>
+          <div class="resume-list" id="resumeList" role="menu"></div>
         </div>
         <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
       </div>
@@ -903,6 +925,7 @@
   const resumeBtn = document.getElementById("resumeBtn");
   const resumeTitle = document.getElementById("resumeTitle");
   const resumeMeta = document.getElementById("resumeMeta");
+  const resumeList = document.getElementById("resumeList");
   const titleByFile = {};
   items.forEach(function (b) { titleByFile[b.file] = b.title; });
 
@@ -920,34 +943,80 @@
     saveBookmarks(all);
     renderResume();
   }
-  function latestBookmark() {
-    var all = loadBookmarks(), best = null;
-    Object.keys(all).forEach(function (f) {
-      var b = all[f];
-      if (!b || typeof b.pct !== "number" || !titleByFile[f]) return;
-      if (!best || (b.ts || 0) > (best.ts || 0)) { b.file = f; best = b; }
-    });
-    return best;
+  function bookmarkRows() {
+    var all = loadBookmarks();
+    return Object.keys(all)
+      .map(function (f) {
+        var b = all[f];
+        if (!b || typeof b.pct !== "number" || !titleByFile[f]) return null;
+        return { file: f, pct: b.pct, idx: b.idx, total: b.total, ts: b.ts || 0 };
+      })
+      .filter(Boolean)
+      .sort(function (a, b) { return b.ts - a.ts; });
+  }
+  function openBook(file, pct) {
+    var idx = -1;
+    items.forEach(function (b, k) { if (b.file === file) idx = k; });
+    if (idx >= 0) activate(idx, { resumePct: pct });
+    if (resumeBox) resumeBox.classList.remove("open");
+  }
+  function removeBookmark(file) {
+    var all = loadBookmarks();
+    delete all[file];
+    saveBookmarks(all);
+    renderResume();
   }
   function renderResume() {
     if (!resumeBox) return;
-    var b = latestBookmark();
-    if (!b) { resumeBox.classList.remove("show"); return; }
+    var rows = bookmarkRows();
+    if (!rows.length) {
+      resumeBox.classList.remove("show", "open");
+      if (resumeList) resumeList.innerHTML = "";
+      return;
+    }
     resumeBox.classList.add("show");
-    resumeTitle.textContent = titleByFile[b.file];
-    var meta = b.pct + "%";
-    if (b.total) meta += " · глава " + b.idx + "/" + b.total;
-    resumeMeta.textContent = meta;
-    resumeBox.dataset.file = b.file;
-    resumeBox.dataset.pct = String(b.pct);
+    var top = rows[0];
+    resumeTitle.textContent = titleByFile[top.file];
+    resumeMeta.textContent = top.pct + "%";
+    if (!resumeList) return;
+    resumeList.innerHTML = "";
+    rows.slice(0, 8).forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "resume-row";
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "resume-item";
+      var t = document.createElement("b");
+      t.textContent = titleByFile[r.file];
+      var m = document.createElement("span");
+      m.textContent = r.pct + "%" + (r.total ? " · глава " + r.idx + "/" + r.total : "");
+      btn.appendChild(t);
+      btn.appendChild(m);
+      btn.addEventListener("click", function () { openBook(r.file, r.pct); });
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "resume-del";
+      del.title = "Убрать из истории";
+      del.setAttribute("aria-label", "Убрать из истории");
+      del.innerHTML = "&times;";
+      del.addEventListener("click", function (e) {
+        e.stopPropagation();
+        removeBookmark(r.file);
+      });
+
+      row.appendChild(btn);
+      row.appendChild(del);
+      resumeList.appendChild(row);
+    });
   }
-  if (resumeBtn) resumeBtn.addEventListener("click", function () {
-    var file = resumeBox.dataset.file;
-    if (!file) return;
-    var pct = parseFloat(resumeBox.dataset.pct);
-    var idx = -1;
-    items.forEach(function (b, k) { if (b.file === file) idx = k; });
-    if (idx >= 0) activate(idx, { resumePct: isNaN(pct) ? 0 : pct });
+  if (resumeBtn) resumeBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    resumeBox.classList.toggle("open");
+  });
+  document.addEventListener("click", function (e) {
+    if (resumeBox && !resumeBox.contains(e.target)) resumeBox.classList.remove("open");
   });
 
   function refreshRead() {
