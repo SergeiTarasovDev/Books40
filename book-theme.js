@@ -209,6 +209,51 @@
           btn.title = on ? "Снять закладку" : "Поставить закладку";
           btn.setAttribute("aria-pressed", on ? "true" : "false");
         });
+        renderBookmarkBanner();
+      }
+
+      function removeLocalBookmark() {
+        var all = readBookmarks();
+        delete all[FILE];
+        writeBookmarks(all);
+        if (embedded) {
+          try { window.parent.postMessage({ type: "book-bookmark", file: FILE, bookmark: null }, "*"); } catch (e) {}
+        }
+        refreshChapterMarks();
+      }
+
+      function renderBookmarkBanner() {
+        var bm = readBookmarks()[FILE];
+        var host = document.querySelector(".wrap") || document.body;
+        var el = document.getElementById("bookmarkBanner");
+        if (!bm) { if (el && el.parentNode) el.parentNode.removeChild(el); return; }
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "bookmarkBanner";
+          el.className = "bookmark-banner";
+          var hero = host.querySelector("header.hero");
+          if (hero && hero.parentNode) hero.parentNode.insertBefore(el, hero.nextSibling);
+          else host.insertBefore(el, host.firstChild);
+        }
+        el.innerHTML = "";
+        var txt = document.createElement("span");
+        txt.className = "bookmark-banner-txt";
+        txt.textContent = "Закладка: " + (bm.chapter || ("глава " + bm.idx)) + " · " + bm.pct + "%";
+        var go = document.createElement("button");
+        go.type = "button";
+        go.className = "bookmark-banner-go";
+        go.textContent = "Перейти";
+        go.addEventListener("click", function () { scrollToPct(bm.pct); });
+        var del = document.createElement("button");
+        del.type = "button";
+        del.className = "bookmark-banner-del";
+        del.innerHTML = "&times;";
+        del.title = "Снять закладку";
+        del.setAttribute("aria-label", "Снять закладку");
+        del.addEventListener("click", removeLocalBookmark);
+        el.appendChild(txt);
+        el.appendChild(go);
+        el.appendChild(del);
       }
 
       function toggleChapterBookmark(el, i) {
