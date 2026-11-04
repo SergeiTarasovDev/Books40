@@ -886,9 +886,12 @@
       broadcastRead();
     } else if (d.type === "book-progress" && d.file && d.file === currentBookFile) {
       if (footProg) footProg.textContent = d.total ? (d.pct + "% · глава " + d.idx + "/" + d.total) : (d.pct + "%");
-      if (Date.now() - lastBookmarkAt > 1200) { lastBookmarkAt = Date.now(); rememberBookmark(d.file, d.pct, d.idx, d.total); }
-    } else if (d.type === "book-bookmark" && d.file && d.bookmark) {
-      rememberBookmark(d.file, d.bookmark.pct, d.bookmark.idx, d.bookmark.total);
+    } else if (d.type === "book-bookmark" && d.file) {
+      if (d.bookmark) {
+        rememberBookmark(d.file, d.bookmark.pct, d.bookmark.idx, d.bookmark.total, d.bookmark.chapter);
+      } else {
+        removeBookmark(d.file);
+      }
     }
   });
 
@@ -944,11 +947,10 @@
   function saveBookmarks(o) {
     try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(o)); } catch (e) {}
   }
-  let lastBookmarkAt = 0;
-  function rememberBookmark(file, pct, idx, total) {
-    if (!file || typeof pct !== "number" || pct <= 0) return;
+  function rememberBookmark(file, pct, idx, total, chapter) {
+    if (!file || typeof pct !== "number") return;
     var all = loadBookmarks();
-    all[file] = { pct: pct, idx: idx, total: total, ts: Date.now() };
+    all[file] = { pct: pct, idx: idx, total: total, chapter: chapter || "", ts: Date.now() };
     saveBookmarks(all);
     renderResume();
   }
@@ -958,7 +960,7 @@
       .map(function (f) {
         var b = all[f];
         if (!b || typeof b.pct !== "number" || !titleByFile[f]) return null;
-        return { file: f, pct: b.pct, idx: b.idx, total: b.total, ts: b.ts || 0 };
+        return { file: f, pct: b.pct, idx: b.idx, total: b.total, chapter: b.chapter || "", ts: b.ts || 0 };
       })
       .filter(Boolean)
       .sort(function (a, b) { return b.ts - a.ts; });
@@ -1000,7 +1002,7 @@
       var t = document.createElement("b");
       t.textContent = titleByFile[r.file];
       var m = document.createElement("span");
-      m.textContent = r.pct + "%" + (r.total ? " · глава " + r.idx + "/" + r.total : "");
+      m.textContent = (r.chapter ? r.chapter + " · " : "") + r.pct + "%";
       btn.appendChild(t);
       btn.appendChild(m);
       btn.addEventListener("click", function () { openBook(r.file, r.pct); });

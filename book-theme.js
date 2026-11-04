@@ -38,15 +38,7 @@
   function writeBookmarks(o) {
     try { localStorage.setItem(KEY_BOOKMARKS, JSON.stringify(o)); } catch (e) {}
   }
-  function saveBookmark(r) {
-    if (!FILE || !r) return;
-    var all = readBookmarks();
-    all[FILE] = { pct: r.pct, idx: r.idx, total: r.total, ts: Date.now() };
-    writeBookmarks(all);
-    if (embedded) {
-      try { window.parent.postMessage({ type: "book-bookmark", file: FILE, bookmark: all[FILE] }, "*"); } catch (e) {}
-    }
-  }
+
   function scrollToPct(pct) {
     var doc = document.documentElement;
     var max = doc.scrollHeight - doc.clientHeight;
@@ -77,7 +69,6 @@
     var readBtn = null, readBar = null, finishBtn = null;
     var chip = null, barProgress = null;
     var toTop = null, toTopBar = null;
-    var lastBookmarkAt = 0;
 
     // ---- панель инструментов (десктоп, верх-право) ----
     var tools = document.createElement("div");
@@ -194,18 +185,80 @@
         chip.textContent = label;
         barProgress.textContent = label;
         toTop.classList.toggle("show", r.top > 300);
-        if (r.top > 0 && Date.now() - lastBookmarkAt > 2500) {
-          lastBookmarkAt = Date.now();
-          saveBookmark(r);
-        }
         if (embedded) {
           try { window.parent.postMessage({ type: "book-progress", file: FILE, pct: r.pct, idx: r.idx, total: r.total }, "*"); } catch (e) {}
         }
       }
-      window.addEventListener("pagehide", function () { saveBookmark(compute()); });
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll);
       onScroll();
+
+      // ---- закладка у названия главы ----
+      var chapterBtns = [];
+
+      function chapterTitle(el) {
+        var h = el.querySelector(".ch-title h3") || el.querySelector(".part-head h2") || el.querySelector("h3") || el.querySelector("h2");
+        return h ? h.textContent.replace(/\s+/g, " ").trim() : "Глава";
+      }
+
+      function refreshChapterMarks() {
+        var bm = readBookmarks()[FILE];
+        chapterBtns.forEach(function (btn, i) {
+          var on = !!(bm && bm.idx === i + 1);
+          btn.classList.toggle("bookmarked", on);
+          btn.title = on ? "Снять закладку" : "Поставить закладку";
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      function toggleChapterBookmark(el, i) {
+        var all = readBookmarks();
+        var cur = all[FILE];
+        if (cur && cur.idx === i + 1) {
+          delete all[FILE];
+          writeBookmarks(all);
+          showToast("Закладка снята");
+        } else {
+          var doc = document.documentElement;
+          var max = doc.scrollHeight - doc.clientHeight;
+          var y = el.getBoundingClientRect().top + window.scrollY - 70;
+          var pct = max > 0 ? Math.round((y / max) * 100) : 0;
+          pct = Math.max(0, Math.min(100, pct));
+          all[FILE] = { pct: pct, idx: i + 1, total: chapters.length, chapter: chapterTitle(el), ts: Date.now() };
+          writeBookmarks(all);
+          showToast("Закладка: " + chapterTitle(el));
+        }
+        if (embedded) {
+          try { window.parent.postMessage({ type: "book-bookmark", file: FILE, bookmark: all[FILE] || null }, "*"); } catch (e) {}
+        }
+        refreshChapterMarks();
+      }
+
+      chapters.forEach(function (el, i) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chapter-bookmark";
+        btn.innerHTML = "&#128278;";
+        btn.setAttribute("aria-label", "Поставить закладку");
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleChapterBookmark(el, i);
+        });
+        var head = el.querySelector(".ch-head");
+        var partHead = el.parentElement ? el.parentElement.querySelector(".part-head") : null;
+        if (head) {
+          head.appendChild(btn);
+        } else if (partHead) {
+          partHead.appendChild(btn);
+        } else {
+          var h = el.querySelector("h3, h2");
+          if (h && h.parentNode) { h.parentNode.insertBefore(btn, h.nextSibling); }
+          else { el.insertBefore(btn, el.firstChild); }
+        }
+        chapterBtns.push(btn);
+      });
+      refreshChapterMarks();
     }
 
     // ---- состояние «прочитано» ----

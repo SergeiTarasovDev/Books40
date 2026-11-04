@@ -185,6 +185,14 @@ article.chapter{
   font-weight:700;font-size:15px;transform:translateY(6px);
 }
 .ch-title h3{margin:0;font-size:23px;line-height:1.25;font-weight:700}
+.chapter-bookmark{
+  margin-left:auto;flex:0 0 auto;align-self:center;appearance:none;cursor:pointer;
+  width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:1px solid var(--line);border-radius:8px;
+  font-size:14px;line-height:1;opacity:.55;transition:opacity .15s ease,border-color .15s ease;
+}
+.chapter-bookmark:hover{opacity:1;border-color:var(--accent)}
+.chapter-bookmark.bookmarked{opacity:1;border-color:var(--accent);background:var(--accent-bg)}
 .ch-title .en{color:var(--accent);font-size:14px;font-family:"Segoe UI",Arial,sans-serif;font-style:italic}
 .lead{margin:16px 0 0;font-size:16.5px}
 .lead + .lead{margin-top:12px}
