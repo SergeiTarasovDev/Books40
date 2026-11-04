@@ -7,6 +7,7 @@
 (function () {
   var KEY_THEME = "book-theme";
   var KEY_READ  = "books-read";
+  var KEY_BOOKMARKS = "book-bookmarks";
   var VALID = { beige: 1, dark: 1 };
   var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
   var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
@@ -29,6 +30,29 @@
     try { return JSON.parse(localStorage.getItem(KEY_READ)) || {}; } catch (e) { return {}; }
   }
   function writeAll(o) { try { localStorage.setItem(KEY_READ, JSON.stringify(o)); } catch (e) {} }
+
+  // ---- закладки: запоминаем последнюю позицию каждой книги ----
+  function readBookmarks() {
+    try { return JSON.parse(localStorage.getItem(KEY_BOOKMARKS)) || {}; } catch (e) { return {}; }
+  }
+  function writeBookmarks(o) {
+    try { localStorage.setItem(KEY_BOOKMARKS, JSON.stringify(o)); } catch (e) {}
+  }
+  function saveBookmark(r) {
+    if (!FILE || !r) return;
+    var all = readBookmarks();
+    all[FILE] = { pct: r.pct, idx: r.idx, total: r.total, ts: Date.now() };
+    writeBookmarks(all);
+    if (embedded) {
+      try { window.parent.postMessage({ type: "book-bookmark", file: FILE, bookmark: all[FILE] }, "*"); } catch (e) {}
+    }
+  }
+  function scrollToPct(pct) {
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - doc.clientHeight;
+    var y = max > 0 ? Math.round(max * (Math.max(0, Math.min(100, pct)) / 100)) : 0;
+    window.scrollTo({ top: y, behavior: "auto" });
+  }
 
   function fileName() {
     try {
@@ -53,6 +77,7 @@
     var readBtn = null, readBar = null, finishBtn = null;
     var chip = null, barProgress = null;
     var toTop = null, toTopBar = null;
+    var lastBookmarkAt = 0;
 
     // ---- панель инструментов (десктоп, верх-право) ----
     var tools = document.createElement("div");
@@ -169,10 +194,15 @@
         chip.textContent = label;
         barProgress.textContent = label;
         toTop.classList.toggle("show", r.top > 300);
+        if (r.top > 0 && Date.now() - lastBookmarkAt > 2500) {
+          lastBookmarkAt = Date.now();
+          saveBookmark(r);
+        }
         if (embedded) {
           try { window.parent.postMessage({ type: "book-progress", file: FILE, pct: r.pct, idx: r.idx, total: r.total }, "*"); } catch (e) {}
         }
       }
+      window.addEventListener("pagehide", function () { saveBookmark(compute()); });
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll);
       onScroll();
@@ -222,10 +252,34 @@
         if (d.type === "book-theme" && valid(d.theme)) { applyTheme(d.theme); saveTheme(d.theme); refreshTheme(); }
         else if (d.type === "books-read" && Array.isArray(d.list)) { setReadList(d.list); }
         else if (d.type === "book-scroll-top") { window.scrollTo({ top: 0, behavior: "smooth" }); }
+        else if (d.type === "book-goto" && typeof d.pct === "number") { scrollToPct(d.pct); }
       });
     }
 
     refreshTheme();
     refreshRead();
+
+    // ---- продолжить с закладки (по ?resume=1 или #resume) ----
+    function showToast(text) {
+      var el = document.createElement("div");
+      el.className = "bookmark-toast";
+      el.textContent = text;
+      document.body.appendChild(el);
+      requestAnimationFrame(function () { el.classList.add("show"); });
+      setTimeout(function () {
+        el.classList.remove("show");
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 250);
+      }, 2200);
+    }
+    var wantResume = /[?&]resume=1/.test(location.search) || location.hash === "#resume";
+    if (isBookPage && wantResume) {
+      var bm = readBookmarks()[FILE];
+      if (bm && typeof bm.pct === "number") {
+        setTimeout(function () {
+          scrollToPct(bm.pct);
+          showToast("Продолжаем с " + bm.pct + "%");
+        }, 150);
+      }
+    }
   });
 })();

@@ -172,6 +172,17 @@
     padding:12px;
     display:flex;flex-direction:column;gap:8px;
   }
+  .resume{display:none}
+  .resume.show{display:block}
+  .resume button{
+    display:flex;align-items:center;gap:8px;width:100%;appearance:none;font:inherit;
+    font-size:12.5px;text-align:left;color:var(--text);cursor:pointer;
+    background:var(--chrome-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;
+  }
+  .resume button:hover{border-color:var(--gold)}
+  .resume .resume-lbl{color:var(--muted);white-space:nowrap}
+  .resume .resume-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .resume .resume-meta{margin-left:auto;color:var(--gold);font-weight:700;white-space:nowrap}
   .read-stat{font-size:12.5px;color:var(--muted)}
   .read-stat b{color:var(--gold)}
   .read-actions{display:flex;gap:6px}
@@ -284,6 +295,8 @@
       flex-direction:row;align-items:center;gap:12px;
       border-top:0;padding:0;margin:0;
     }
+    .topbar-side .resume{margin:0}
+    .topbar-side .resume button{width:auto;max-width:280px}
     .topbar-side .read-stat{white-space:nowrap}
     .topbar-side .read-actions{gap:6px}
     .topbar-side .read-actions button{padding:6px 10px}
@@ -445,6 +458,13 @@
         </div>
       </nav>
       <div class="side-foot" id="sideFoot">
+        <div class="resume" id="resumeBox">
+          <button type="button" id="resumeBtn" title="Продолжить с последнего места">
+            <span class="resume-lbl">Продолжить:</span>
+            <span class="resume-title" id="resumeTitle"></span>
+            <span class="resume-meta" id="resumeMeta"></span>
+          </button>
+        </div>
         <div class="read-stat">Прочитано: <b id="readCount">0</b> из <span id="readTotal">63</span></div>
       </div>
     </aside>
@@ -752,8 +772,8 @@
   document.getElementById("expandAll").addEventListener("click", function () { setAllCats(true); });
   document.getElementById("collapseAll").addEventListener("click", function () { setAllCats(false); });
 
-  function fileUrl(file) {
-    return encodeURI(file) + "?theme=" + currentTheme;
+  function fileUrl(file, resume) {
+    return encodeURI(file) + "?theme=" + currentTheme + (resume ? "&resume=1" : "");
   }
 
   function postTheme(frame) {
@@ -764,17 +784,21 @@
   }
   function broadcast() { frames.forEach(postTheme); }
 
-  function activate(index) {
+  function activate(index, opts) {
+    const resumePct = (opts && typeof opts.resumePct === "number") ? opts.resumePct : null;
     buttons.forEach(function (b, k) { b.classList.toggle("active", k === index); });
     frames.forEach(function (f, k) {
       const on = (k === index);
       f.classList.toggle("active", on);
       if (on) {
         if (!f.getAttribute("src")) {
-          f.setAttribute("src", fileUrl(f.dataset.src));
+          f.setAttribute("src", fileUrl(f.dataset.src, resumePct !== null));
         } else {
           postTheme(f);
           postRead(f);
+          if (resumePct !== null && f.contentWindow) {
+            try { f.contentWindow.postMessage({ type: "book-goto", pct: resumePct }, "*"); } catch (e) {}
+          }
         }
       }
     });
@@ -832,6 +856,9 @@
       broadcastRead();
     } else if (d.type === "book-progress" && d.file && d.file === currentBookFile) {
       if (footProg) footProg.textContent = d.total ? (d.pct + "% · глава " + d.idx + "/" + d.total) : (d.pct + "%");
+      if (Date.now() - lastBookmarkAt > 1200) { lastBookmarkAt = Date.now(); rememberBookmark(d.file, d.pct, d.idx, d.total); }
+    } else if (d.type === "book-bookmark" && d.file && d.bookmark) {
+      rememberBookmark(d.file, d.bookmark.pct, d.bookmark.idx, d.bookmark.total);
     }
   });
 
@@ -869,6 +896,59 @@
     try { localStorage.setItem(READ_KEY, JSON.stringify(o)); } catch (e) {}
   }
   let readMap = loadRead();
+
+  // ---- закладки: последняя позиция чтения и быстрый возврат ----
+  const BOOKMARKS_KEY = "book-bookmarks";
+  const resumeBox = document.getElementById("resumeBox");
+  const resumeBtn = document.getElementById("resumeBtn");
+  const resumeTitle = document.getElementById("resumeTitle");
+  const resumeMeta = document.getElementById("resumeMeta");
+  const titleByFile = {};
+  items.forEach(function (b) { titleByFile[b.file] = b.title; });
+
+  function loadBookmarks() {
+    try { return JSON.parse(localStorage.getItem(BOOKMARKS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveBookmarks(o) {
+    try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(o)); } catch (e) {}
+  }
+  let lastBookmarkAt = 0;
+  function rememberBookmark(file, pct, idx, total) {
+    if (!file || typeof pct !== "number" || pct <= 0) return;
+    var all = loadBookmarks();
+    all[file] = { pct: pct, idx: idx, total: total, ts: Date.now() };
+    saveBookmarks(all);
+    renderResume();
+  }
+  function latestBookmark() {
+    var all = loadBookmarks(), best = null;
+    Object.keys(all).forEach(function (f) {
+      var b = all[f];
+      if (!b || typeof b.pct !== "number" || !titleByFile[f]) return;
+      if (!best || (b.ts || 0) > (best.ts || 0)) { b.file = f; best = b; }
+    });
+    return best;
+  }
+  function renderResume() {
+    if (!resumeBox) return;
+    var b = latestBookmark();
+    if (!b) { resumeBox.classList.remove("show"); return; }
+    resumeBox.classList.add("show");
+    resumeTitle.textContent = titleByFile[b.file];
+    var meta = b.pct + "%";
+    if (b.total) meta += " · глава " + b.idx + "/" + b.total;
+    resumeMeta.textContent = meta;
+    resumeBox.dataset.file = b.file;
+    resumeBox.dataset.pct = String(b.pct);
+  }
+  if (resumeBtn) resumeBtn.addEventListener("click", function () {
+    var file = resumeBox.dataset.file;
+    if (!file) return;
+    var pct = parseFloat(resumeBox.dataset.pct);
+    var idx = -1;
+    items.forEach(function (b, k) { if (b.file === file) idx = k; });
+    if (idx >= 0) activate(idx, { resumePct: isNaN(pct) ? 0 : pct });
+  });
 
   function refreshRead() {
     readTotalEl.textContent = String(readFiles.length);
@@ -962,6 +1042,7 @@
 
   refreshRead();
   refreshSwitch();
+  renderResume();
   activate(0);
 </script>
 

@@ -399,6 +399,8 @@ html{scrollbar-width:thin;scrollbar-color:var(--accent-line) transparent}
 .theme-toggle button:hover{color:var(--accent)}
 .theme-toggle button.active{background:var(--accent-bg);color:var(--accent)}
 .theme-toggle svg{width:16px;height:16px}
+.bookmark-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:60}
+.bookmark-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ---------- отметка «прочитано» в каталоге ---------- */
 article.card{position:relative}
