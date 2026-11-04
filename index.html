@@ -396,6 +396,7 @@
       background:var(--chrome);
       border-bottom:1px solid var(--line);
     }
+    .mobile-bar-side{display:flex;align-items:center;gap:8px}
     .mobile-bar .theme-switch{width:auto}
 
     aside.sidebar{
@@ -412,6 +413,8 @@
 
     .side-top{display:none}
     .side-nav{padding:14px 12px calc(18px + env(safe-area-inset-bottom))}
+    .side-foot{border-top:0;border-bottom:1px solid var(--line)}
+    .side-foot .resume-list{max-height:40vh}
 
     .scrim{
       display:block;
@@ -437,13 +440,18 @@
       <button class="icon-btn" id="menuBtn" type="button" aria-label="Меню" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
       </button>
-      <div class="theme-switch" role="group" aria-label="Тема оформления">
-        <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+      <div class="mobile-bar-side">
+        <button class="icon-btn" id="mobileResumeBtn" type="button" aria-label="История чтения" title="Продолжить чтение" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg>
         </button>
-        <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        </button>
+        <div class="theme-switch" role="group" aria-label="Тема оформления">
+          <button type="button" data-value="beige" title="Светлая тема" aria-label="Светлая тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+          </button>
+          <button type="button" data-value="dark" title="Тёмная тема" aria-label="Тёмная тема">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -926,6 +934,7 @@
   const resumeTitle = document.getElementById("resumeTitle");
   const resumeMeta = document.getElementById("resumeMeta");
   const resumeList = document.getElementById("resumeList");
+  const mobileResumeBtn = document.getElementById("mobileResumeBtn");
   const titleByFile = {};
   items.forEach(function (b) { titleByFile[b.file] = b.title; });
 
@@ -969,6 +978,7 @@
   function renderResume() {
     if (!resumeBox) return;
     var rows = bookmarkRows();
+    if (mobileResumeBtn) mobileResumeBtn.hidden = !rows.length;
     if (!rows.length) {
       resumeBox.classList.remove("show", "open");
       if (resumeList) resumeList.innerHTML = "";
@@ -1014,6 +1024,11 @@
   if (resumeBtn) resumeBtn.addEventListener("click", function (e) {
     e.stopPropagation();
     resumeBox.classList.toggle("open");
+  });
+  if (mobileResumeBtn) mobileResumeBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    openNav();
+    if (resumeBox) resumeBox.classList.add("open");
   });
   document.addEventListener("click", function (e) {
     if (resumeBox && !resumeBox.contains(e.target)) resumeBox.classList.remove("open");
@@ -1093,7 +1108,7 @@
     const mobile = isMobileLayout();
     if (mobile) {
       sidebarEl.appendChild(navEl);
-      sidebarEl.appendChild(footEl);
+      sidebarEl.insertBefore(footEl, navEl);
     } else {
       menuSlot.appendChild(navEl);
       sideSlot.insertBefore(footEl, sideSlot.firstChild);
