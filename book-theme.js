@@ -208,6 +208,8 @@
           btn.classList.toggle("bookmarked", on);
           btn.title = on ? "Снять закладку" : "Поставить закладку";
           btn.setAttribute("aria-pressed", on ? "true" : "false");
+          var lbl = btn.querySelector(".cb-text");
+          if (lbl) lbl.textContent = on ? "В закладке" : "В закладки";
         });
         renderBookmarkBanner();
       }
@@ -283,7 +285,7 @@
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "chapter-bookmark";
-        btn.innerHTML = "&#128278;";
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg><span class="cb-text">В закладки</span>';
         btn.setAttribute("aria-label", "Поставить закладку");
         btn.addEventListener("click", function (e) {
           e.preventDefault();

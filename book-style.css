@@ -186,13 +186,21 @@ article.chapter{
 }
 .ch-title h3{margin:0;font-size:23px;line-height:1.25;font-weight:700}
 .chapter-bookmark{
-  margin-left:auto;flex:0 0 auto;align-self:center;appearance:none;cursor:pointer;
-  width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+  margin-left:auto;flex:0 0 auto;align-self:center;
+  display:inline-flex;align-items:center;gap:6px;
+  appearance:none;cursor:pointer;height:30px;padding:0 10px;
   background:transparent;border:1px solid var(--line);border-radius:8px;
-  font-size:14px;line-height:1;opacity:.55;transition:opacity .15s ease,border-color .15s ease;
+  color:var(--muted);font:inherit;font-size:12px;font-weight:600;line-height:1;
+  opacity:.75;transition:opacity .15s ease,border-color .15s ease,color .15s ease;
 }
-.chapter-bookmark:hover{opacity:1;border-color:var(--accent)}
-.chapter-bookmark.bookmarked{opacity:1;border-color:var(--accent);background:var(--accent-bg)}
+.chapter-bookmark svg{width:15px;height:15px;flex:0 0 auto}
+.chapter-bookmark:hover{opacity:1;border-color:var(--accent);color:var(--accent)}
+.chapter-bookmark.bookmarked{opacity:1;border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.chapter-bookmark.bookmarked svg{fill:currentColor}
+@media (max-width:720px){
+  .ch-head{flex-wrap:wrap;row-gap:6px}
+  .chapter-bookmark{margin-left:0}
+}
 .ch-title .en{color:var(--accent);font-size:14px;font-family:"Segoe UI",Arial,sans-serif;font-style:italic}
 .lead{margin:16px 0 0;font-size:16.5px}
 .lead + .lead{margin-top:12px}
